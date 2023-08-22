@@ -65,9 +65,9 @@ private:
 	std::mutex	m_lock;
 	std::thread	* m_worker;
 	SDRunoPlugin_wsprUi m_form;
+	decimator	decimator_0;
 	decimator	decimator_1;
 	decimator	decimator_2;
-	decimator	decimator_3;
 	RingBuffer<std::complex<float>> inputBuffer;
 	struct	decoder_options	dec_options;
 	struct	decoder_results	dec_results [50];

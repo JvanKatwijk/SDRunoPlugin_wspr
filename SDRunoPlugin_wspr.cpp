@@ -51,13 +51,11 @@ struct tm       *gtm;
 	                              IUnoPlugin (controller),
 	                              m_form	(*this, controller),
 	                              m_worker	(nullptr),
-	                              decimator_1 (21, 1500, 
-	                                                   SAMPLING_RATE, 8),
-	                              decimator_2 (33, 1500, 
-	                                                   SAMPLING_RATE / 8, 4),
-	                              decimator_3 (33, 1500,
-	                                                   SAMPLING_RATE / 32, 16),
-	                              inputBuffer (8 * 32768),
+	                              decimator_0 (17, 1000, 
+	                                                   SAMPLING_RATE, 16),
+	                              decimator_1 (11, 1000, 12000, 4),
+	                              decimator_2 (9, 150, 3000, 8),
+	                              inputBuffer (32 * 32768),
 	                              fft (512, true) {
 	m_controller	= &controller;
 	m_controller    -> RegisterAudioProcessor (0, this);
@@ -133,9 +131,9 @@ static	int teller = 0;
 	                   std::complex<float>(buffer [2 * i + 1],
 	                                       buffer [2 * i]);
 
-	      if (decimator_1. Pass (sample, &sample) &&
-	          decimator_2. Pass (sample, &sample) &&
-	          decimator_3. Pass (sample, &sample)) {
+	      if (decimator_0. Pass (sample, &sample) &&
+	          decimator_1. Pass (sample, &sample) &&
+	          decimator_2. Pass (sample, &sample)) {
 	         if (rx_state. savingSamples. load ()) {
 	            inputBuffer. putDataIntoBuffer (&sample, 1);
 	            teller ++;

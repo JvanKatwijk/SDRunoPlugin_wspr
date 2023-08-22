@@ -29,4 +29,8 @@ library.
 The copyrights of the KISS library belong to  Mark Borgerding and
 are gratefully acknowledged.
 
+The basic idea is that since reading in the samples takes about 116 seconds, 
+there is ample time to do the processing in parallel.
+In the Linux version decoding is dome by firing a single thread in which
+the function is executed.
 
