@@ -10,6 +10,7 @@
 #include <iunoaudioprocessor.h>
 #include <iunostreamobserver.h>
 #include <iunoannotator.h>
+#include	"constants.h"
 #include "SDRunoPlugin_wsprUi.h"
 #include        "ringbuffer.h"
 #include        "decimator.h"
@@ -17,12 +18,8 @@
 #include	"./fft/fft-handler.h"
 
 #include	<complex>
-//	Sampling definition for SDRplay devices & WSPR protocol */
-#define SIGNAL_LENGTH       116
-#define SIGNAL_SAMPLE_RATE  375
-#define SAMPLING_RATE       192000
 
-#define MHz(x)  (1000000 * x)
+
 
 class SDRunoPlugin_wspr : public IUnoPlugin,
 	                          public IUnoStreamProcessor,

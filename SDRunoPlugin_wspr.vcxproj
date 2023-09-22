@@ -125,6 +125,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="constants.h" />
     <ClInclude Include="SDRunoPlugin_wspr.h" />
     <ClInclude Include="SDRunoPlugin_wsprForm.h" />
     <ClInclude Include="SDRunoPlugin_wsprUi.h" />

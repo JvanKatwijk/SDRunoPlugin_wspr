@@ -58,10 +58,8 @@ struct tm       *gtm;
 	                              inputBuffer (32 * 32768),
 	                              fft (512, true) {
 	m_controller	= &controller;
-	m_controller    -> RegisterAudioProcessor (0, this);
-        m_controller    -> SetDemodulatorType (0,
-                                 IUnoPluginController::DemodulatorIQOUT);
-
+	
+   
 	memset (dec_options. rcall, 0, 13);
 	memset (dec_options. rloc, 0, 7);
 
@@ -91,6 +89,9 @@ struct tm       *gtm;
 	   dec_options. rcall [i] = cs. c_str () [i];
 	for (int i = 0; i < gr. size (); i ++)
 	   dec_options. rloc [i] = gr. c_str () [i];
+
+	m_controller	-> SetDemodulatorType (0, IUnoPluginController::DemodulatorIQOUT);
+	m_controller	-> RegisterAudioProcessor(0, this);
 	m_worker        =
 	        new std::thread (&SDRunoPlugin_wspr::workerFunction, this);
 }
@@ -137,12 +138,13 @@ static	int teller = 0;
 	         if (rx_state. savingSamples. load ()) {
 	            inputBuffer. putDataIntoBuffer (&sample, 1);
 	            teller ++;
-	            if (teller % SIGNAL_SAMPLE_RATE == 0)
-	               m_form.  show_status ("reading  " + std::to_string (teller / SIGNAL_SAMPLE_RATE));
+				if (teller % SIGNAL_SAMPLE_RATE == 0) 
+					m_form.show_status ("reading  " + std::to_string (teller / SIGNAL_SAMPLE_RATE));
+			
 	            if (inputBuffer. GetRingBufferReadAvailable () >=
 	                               SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE) {
-	               teller = 0;
-				   rx_state.savingSamples.store(false);
+					teller = 0;
+	                rx_state.savingSamples.store (false);
 	            }
 	         }
 	      }
@@ -202,7 +204,7 @@ int	cycleCounter	= 1;
 	   if (!rx_state. running. load ())
 	      break;
 	   m_form. show_status ("samples read\n");
-//	The "reader" probably has already set the flag to false
+//	   The "reader" probably has already set the flag to false
 	   rx_state. savingSamples. store (false);
 	   int N = inputBuffer.
 	        getDataFromBuffer (buffer, SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE);
