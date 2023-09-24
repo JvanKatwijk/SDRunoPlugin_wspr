@@ -56,7 +56,7 @@ struct tm       *gtm;
 	                              decimator_1 (11, 1000, 12000, 4),
 	                              decimator_2 (9, 150, 3000, 8),
 	                              inputBuffer (32 * 32768),
-	                              fft (512, true) {
+	                              fft (512, false) {
 	m_controller	= &controller;
 	
    
@@ -173,22 +173,21 @@ struct timeval lTime;
         uint32_t uwait	=  120000000 - usec - 1000;
 	while (uwait / 1000000 > 1) {
 	   m_form. show_status ("waiting  " + std::to_string (uwait / 1000000));
-	   Sleep (1000); // sleep in seconds
+	   Sleep (1000); // sleep in milliseconds
 	   uwait -= 1000000;
-	   if (!rx_state. running.load())
-		   break;
+	   if (!rx_state.running.load())
+		   return;
 	}
 	if (uwait > 0)
 	   Sleep (uwait / 1000); 	// Sleep in milliseconds
 }
 
-void	SDRunoPlugin_wspr::workerFunction	() {
-	rx_state. running. store (true);
 static
 std::complex<float> buffer [SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE];
+void	SDRunoPlugin_wspr::workerFunction	() {
 int	cycleCounter	= 1;
-	m_form. show_results ("running");
 	rx_state. running. store (true);
+	m_form. show_results ("running");
 
 	wait_to_start ();
 	rx_state. savingSamples. store (true);
@@ -199,15 +198,15 @@ int	cycleCounter	= 1;
 	   while (rx_state. running. load () && 
 	              (inputBuffer. GetRingBufferReadAvailable () <
 	                                SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE)) { 
-	      Sleep (100);	// here: micro seconds
+	      Sleep (100);	// here: milli seconds
 	   }
 	   if (!rx_state. running. load ())
 	      break;
-	   m_form. show_status ("samples read\n");
-//	   The "reader" probably has already set the flag to false
 	   rx_state. savingSamples. store (false);
+//	   The "reader" probably has already set the flag to false
 	   int N = inputBuffer.
 	        getDataFromBuffer (buffer, SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE);
+	   m_form. show_status ("samples are in\n");
 //
 	   inputBuffer. FlushRingBuffer ();
 //	This seems the right moment to honor switchof frequency
@@ -221,6 +220,8 @@ int	cycleCounter	= 1;
 	   }
 //
 	   wait_to_start ();
+	   if (!rx_state.running. load ())
+		   break;
 	   rx_state. savingSamples. store (true);
 //
 //	and, while the reader callback is reading in the samples for the

@@ -295,14 +295,15 @@ void	SDRunoPlugin_wsprForm::Setup() {
 	bandSelector.push_back ("70cm");
 	bandSelector.push_back ("23cm");
 	bandSelector.option (7);
-	bandSelector.events ().
+	bandSelector. tooltip ("predefined frequencies, known for wspr");
+	bandSelector. events ().
 		selected([&](const nana::arg_combox& ar_cbx) {
 		set_band(ar_cbx.widget.caption()); });
 
 	callsign_Button.caption ("callsign");
 	callsign_Button.tooltip("Touching the button will show a small widget\nwhere you can give your callsign and grid locator\n\
 the values are maintained between invocations of the plugin");
-	callsign_Button.events().click([&]() {set_callSign(); });
+	callsign_Button. events () .click([&]() {set_callSign(); });
 
 	subtractionButton.caption ("on");
 	subtractionButton.tooltip ("switch subtraction on or off");
