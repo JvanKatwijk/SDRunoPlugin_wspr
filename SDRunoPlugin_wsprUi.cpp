@@ -159,3 +159,28 @@ void	SDRunoPlugin_wsprUi::handle_reset	() {
 	m_parent. handle_reset ();
 }
 
+void	SDRunoPlugin_wsprUi::display_callsign	(const std::string &s) {
+	std::lock_guard<std::mutex> l (m_lock);
+	if (m_form != nullptr)
+	   m_form -> display_callsign (s);
+}
+
+void	SDRunoPlugin_wsprUi::display_grid	(const std::string &s) {
+	std::lock_guard<std::mutex> l (m_lock);
+	if (m_form != nullptr)
+	   m_form -> display_grid (s);
+}
+
+void	SDRunoPlugin_wsprUi::show_printStatus	(const std::string &s) {
+	std::lock_guard<std::mutex> l (m_lock);
+	if (m_form != nullptr)
+	   m_form -> show_printStatus (s);
+}
+
+void	SDRunoPlugin_wsprUi::show_version	(const std::string &s) {
+	std::lock_guard<std::mutex> l (m_lock);
+	if (m_form != nullptr)
+	   m_form -> show_version (s);
+}
+
+

@@ -12,12 +12,12 @@ The signal itself has a bandwidth of app 6 Hz, with frequency shifts of
 about 1.45 Hz.
 Decoding is tough, happily there is a ready-made set of functions that
 will do the hard work (wsprd). It must be stressed that the copyrights for those
-functions belongs to Joe Taylor and Steven Franke, and those functions
+functions belongs to **Joe Taylor and Steven Franke **, and those functions
 are included integrally in the code for this plugin.
 
 The function of the plugin front end is then limited to
-a. ensuring that reading in samples starts at even minutes;
-b. input filtering, collecing and decimation. The final decimation
+ a. ensuring that reading in samples starts at even minutes;
+ b. input filtering, collecing and decimation. The final decimation
 is to 375 samples/second (We start here with 192000, the SDRplay will send
 2000000 Samples/second to the SDRuno framewirk).
 c, handling the result.

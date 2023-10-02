@@ -10,8 +10,8 @@
 #include <iunoaudioprocessor.h>
 #include <iunostreamobserver.h>
 #include <iunoannotator.h>
-#include	"constants.h"
 #include "SDRunoPlugin_wsprUi.h"
+#include	"constants.h"
 #include        "ringbuffer.h"
 #include        "decimator.h"
 #include        ".\wsprd\wsprd.h"
@@ -91,6 +91,7 @@ private:
 	float		samples_q [SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE];
 	int		newFrequency;
 
+	std::mutex	printing;
 	void		processBuffer	(std::complex<float> *);
 };
 

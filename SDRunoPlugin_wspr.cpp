@@ -11,7 +11,8 @@
 #include        <atomic>
 #include	".\curl/curl.h"
 
-const char wsprnet_app_version[]  = "uno-0.1";  // 10 chars max.!
+const char wsprnet_app_version[]  = "SDRuno-0.5";  // 10 chars max.!
+const	char *Version	= "0.5";
 
 static
 int	gettimeofday (struct timeval* tv, struct timezone* tz) {
@@ -39,9 +40,9 @@ time_t localtime;
 struct tm       *gtm;
 
 	time (&localtime);
-        gtm = gmtime (&localtime);
-        return std::to_string (gtm -> tm_hour) + "-" +
-                      std::to_string (gtm -> tm_min);
+	gtm = gmtime (&localtime);
+	return std::to_string (gtm -> tm_hour) + "-" +
+	              std::to_string (gtm -> tm_min);
 }
 //
 //	The incoming signal has a rate of 192000, in step 1 we decimate
@@ -65,30 +66,39 @@ struct tm       *gtm;
 
 //
 //	default frequency is in the 20m band
-	rx_state. frequencyChange. store (false);
-	rx_state. running. store (false);
-	rx_state. savingSamples. store (false);
-	rx_options. dialFreq	= 14095600;
-	rx_options. realFreq	= rx_options. dialFreq;
-	rx_options. report	= false;
-	dec_options. freq	= rx_options. dialFreq;
-	dec_options. usehashtable	= 0;
-	dec_options. npasses	= 2;
-	dec_options. subtraction	= true;
-	dec_options. quickmode	= false;
+	rx_state.	frequencyChange. store (false);
+	rx_state.	running. store (false);
+	rx_state.	savingSamples. store (false);
+	rx_options.	dialFreq	= 14095600;
+	rx_options.	realFreq	= rx_options. dialFreq;
+	rx_options.	report		= false;
+	dec_options.	freq		= rx_options. dialFreq;
+	dec_options.	usehashtable	= 0;
+	dec_options.	npasses		= 2;
+	dec_options.	subtraction	= true;
+	dec_options.	quickmode	= false;
 	m_controller	-> SetVfoFrequency (0, (float)dec_options. freq);
 	m_controller	-> SetCenterFrequency (0, (float)dec_options. freq + 1500);
 
+	m_form. show_version (Version);
+//
+//	note that the dec_options. rcall and rloc are set to zero already
 	std::string cs	= m_form. load_callSign ();
 	std::string gr	= m_form. load_grid ();
-	if (cs == "")
-	   cs = "NO_NAME";
-	if (gr == "")
-	   cs = "????";
-	for (int i = 0; i <= cs. size (); i ++)
+	for (int i = 0; i < cs. size (); i ++)
 	   dec_options. rcall [i] = cs. c_str () [i];
 	for (int i = 0; i < gr. size (); i ++)
 	   dec_options. rloc [i] = gr. c_str () [i];
+
+	if (cs == "") 
+	   m_form. display_callsign ("No call");
+	else
+	   m_form. display_callsign (cs);
+
+	if (gr == "")
+	   m_form. display_grid ("No grid");
+	else
+	   m_form. display_grid (gr);
 
 	m_controller	-> SetDemodulatorType (0, IUnoPluginController::DemodulatorIQOUT);
 	m_controller	-> RegisterAudioProcessor(0, this);
@@ -99,9 +109,9 @@ struct tm       *gtm;
 	SDRunoPlugin_wspr::~SDRunoPlugin_wspr () {
 	rx_state. running. store (false);
 	m_form.	show_results ("going to stop"); 
-        m_worker	-> join ();
+	m_worker	-> join ();
 //      m_controller    -> UnregisterStreamProcessor (0, this);
-        m_controller    -> UnregisterAudioProcessor (0, this);
+	m_controller    -> UnregisterAudioProcessor (0, this);
 }
 
 void	SDRunoPlugin_wspr::HandleEvent (const UnoEvent& ev) {
@@ -165,12 +175,12 @@ void	SDRunoPlugin_wspr::wait_to_start () {
 struct timeval lTime;
 //	on start up,  Wait for timing alignment, here we
 //	compute the delay
-        gettimeofday (&lTime, nullptr);
-        uint32_t sec   = lTime. tv_sec % 120;
-        uint32_t usec  = sec * 1000000 + lTime. tv_usec;
+	gettimeofday (&lTime, nullptr);
+	uint32_t sec   = lTime. tv_sec % 120;
+	uint32_t usec  = sec * 1000000 + lTime. tv_usec;
 //
 //      waiting is for an even time in minutes, i.e. 120 seconds
-        uint32_t uwait	=  120000000 - usec - 1000;
+	uint32_t uwait	=  120000000 - usec - 1000;
 	while (uwait / 1000000 > 1) {
 	   m_form. show_status ("waiting  " + std::to_string (uwait / 1000000));
 	   Sleep (1000); // sleep in milliseconds
@@ -293,18 +303,20 @@ struct tm	*gtm;
 	   m_form. addMessage (message);
 	   return;
 	}
-	   
+
+	printing. lock ();
 	for (uint32_t i = 0; i < n_results; i++) {
-	   std::string currentMessage  = "spot at " + theTime +
+	   std::string currentMessage  = "spot at " + theTime +"\t\t"+
 	                    std::to_string (dec_results [i]. snr) + "\t" +
 		            std::to_string (dec_results [i]. dt) + "\t" +
 	                    std::to_string (dec_results [i]. freq) + "\t" +
-	                    std::to_string (dec_results [i]. drift) + "\t" +
-                            std::string (dec_results[i].call) + "\t" +
-                            std::string (dec_results[i].loc) + "\t" +
-                            std::string (dec_results[i].pwr);
+	                    std::to_string (dec_results [i]. drift) + "\t" + 
+	                    std::string (dec_results[i].call) + "\t" +
+	                    std::string (dec_results[i].loc) + "\t" +
+	                    std::string (dec_results[i].pwr);
 	   m_form. addMessage (currentMessage);
-    }
+	}
+	printing. unlock ();
 }
 
 //	Report on WSPRnet 
@@ -314,71 +326,50 @@ CURLcode res;
 char url [256];
 
 	if (!rx_options. report) {
+	   m_form. show_printStatus ("not printing");
 //	   LOG(LOG_DEBUG, "Decoder thread -- Skipping the reporting\n");
 	   return;
 	}
 
-	if (n_results == 0) {
-//	No spot to report, stat option used 
-//	"Table 'wsprnet_db.activity' doesn't exist" reported on web site...
-//	Anyone has doc about this?
-	   snprintf (url, sizeof(url) - 1,
-	             "http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=%.2f&tqrg=%.6f&dbm=%d&version=%s&mode=2",
-                    dec_options. rcall,
-                    dec_options. rloc,
-                    rx_options.dialFreq / 1e6,
-                    0.0f,
-                    rx_options.dialFreq / 1e6,
-                    0,
-                    wsprnet_app_version);
+	if ((dec_options. rcall [0] == 0) ||
+	    (dec_options. rloc  [0] == 0))
+	   return;
 
+	if (n_results > 0)
+		m_form. show_printStatus ("going to post\n");
+	printing. lock ();
+	for (uint32_t i = 0; i < n_results; i++) {
+	   snprintf (url, sizeof (url) - 1, "http://wsprnet.org/post?function=wspr&rcall=%s&rgrid=%s&rqrg=%.6f&date=%02d%02d%02d&time=%02d%02d&sig=%.0f&dt=%.1f&tqrg=%.6f&tcall=%s&tgrid=%s&dbm=%s&version=%s&mode=2",
+	         dec_options.rcall,
+	         dec_options.rloc,
+	         dec_results[i].freq,
+	         rx_state. gtm	-> tm_year - 100,
+	         rx_state. gtm	-> tm_mon + 1,
+	         rx_state. gtm	-> tm_mday,
+	         rx_state. gtm	-> tm_hour,
+	         rx_state. gtm	-> tm_min,
+	         dec_results [i]. snr,
+	         dec_results [i]. dt,
+	         dec_results [i]. freq,
+	         dec_results [i]. call,
+	         dec_results [i]. loc,
+	         dec_results [i]. pwr,
+	         wsprnet_app_version);
+
+//	   LOG(LOG_DEBUG, "Decoder thread -- Sending spot using this URL: %s\n", url);
 	   curl = curl_easy_init ();
 	   if (curl) {
 	      curl_easy_setopt (curl, CURLOPT_URL, url);
 	      curl_easy_setopt (curl, CURLOPT_NOBODY, 1);
 	      res = curl_easy_perform (curl);
-
-	      if (res != CURLE_OK)
-	          fprintf (stderr,
-	               "curl_easy_perform() failed: %s\n",
-	               curl_easy_strerror (res));
-
-	      curl_easy_cleanup (curl);
+	      m_form. show_printStatus (res == CURLE_OK ? "post ok" : curl_easy_strerror (res));
+//	      if (res != CURLE_OK)
+//	         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+	       curl_easy_cleanup (curl);
 	   }
-	   return;
 	}
-
-	for (uint32_t i = 0; i < n_results; i++) {
-	   snprintf (url, sizeof (url) - 1, "http://wsprnet.org/post?function=wspr&rcall=%s&rgrid=%s&rqrg=%.6f&date=%02d%02d%02d&time=%02d%02d&sig=%.0f&dt=%.1f&tqrg=%.6f&tcall=%s&tgrid=%s&dbm=%s&version=%s&mode=2",
-                 dec_options.rcall,
-                 dec_options.rloc,
-                 dec_results[i].freq,
-                 rx_state. gtm	-> tm_year - 100,
-                 rx_state. gtm	-> tm_mon + 1,
-                 rx_state. gtm	-> tm_mday,
-                 rx_state. gtm	-> tm_hour,
-                 rx_state. gtm	-> tm_min,
-                 dec_results[i].snr,
-                 dec_results[i].dt,
-                 dec_results[i].freq,
-                 dec_results[i].call,
-                 dec_results[i].loc,
-                 dec_results[i].pwr,
-                 wsprnet_app_version);
-
- //       LOG(LOG_DEBUG, "Decoder thread -- Sending spot using this URL: %s\n", url);
-        curl = curl_easy_init();
-        if (curl) {
-            curl_easy_setopt(curl, CURLOPT_URL, url);
-            curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
-            res = curl_easy_perform(curl);
-
-            if (res != CURLE_OK)
-                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-
-            curl_easy_cleanup(curl);
-        }
-    }
+	printing. unlock ();
+	
 }
 
 struct {
@@ -418,27 +409,37 @@ void	SDRunoPlugin_wspr::set_band (const std::string &s) {
 }
 
 void    SDRunoPlugin_wspr::set_callSign () {
-        nana::form fm;
-        nana::inputbox::text callsign ("Callsign");
-        nana::inputbox::text antenna ("antenna");
-        nana::inputbox::text grid ("(maidenhead) grid");
-        nana::inputbox inbox (fm, "please fill in");
-        if (inbox. show (callsign, grid, antenna)) {
-           std::string n = callsign. value ();          //nana::string
-           std::string g = grid. value ();              //nana::string
-           m_form. show_status (n + "  " + g);
-           m_form. store_callSign (n);
-           m_form. store_grid     (g);
+nana::form fm;
+
+	nana::inputbox::text callsign ("Callsign");
+	nana::inputbox::text grid ("(maidenhead) grid");
+//	nana::inputbox::text antenna ("antenna");
+	nana::inputbox inbox (fm, "please fill in");
+	if (inbox. show (callsign, grid)) {
+	   std::string n = callsign. value ();          //nana::string
+	   std::string g = grid. value ();              //nana::string
+	   if (n == "")
+	      m_form. display_callsign ("no call");
+	   else
+	      m_form. display_callsign (n);
+	   if (g == "")
+	      m_form. display_grid ("no grid");
+	   else
+	      m_form. display_grid (g);
+	   m_form. store_callSign (n);
+	   m_form. store_grid     (g);
+
+	   printing.lock();
 	   for (int i = 0; i < 13; i ++)
 	      dec_options. rcall [i] = 0;
-	   for (int i = 0; n. c_str () [i] != 0; i ++)
-	      dec_options. rcall [i] = n. c_str () [i];
+	   for (int i = 0; i < n.size(); i++)
+		   dec_options.rcall[i] = n.at(i);
 	   for (int i = 0; i < 7; i ++)
 	      dec_options. rloc [i] = 0;
-	   for (int i = 0; g. c_str () != 0; i ++)
-	      dec_options . rloc [i] = g. c_str () [i];
-           return;
-        }
+	   for (int i = 0; i < g.size(); i++)
+		   dec_options.rloc[i] = g.at(i);
+	   printing.unlock();
+	}
 }
 
 void	SDRunoPlugin_wspr::set_subtraction (bool b) {

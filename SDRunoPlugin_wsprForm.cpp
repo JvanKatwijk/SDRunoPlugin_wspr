@@ -300,86 +300,105 @@ void	SDRunoPlugin_wsprForm::Setup() {
 		selected([&](const nana::arg_combox& ar_cbx) {
 		set_band(ar_cbx.widget.caption()); });
 
-	callsign_Button.caption ("callsign");
+	callsign_Button.caption("callsign");
 	callsign_Button.tooltip("Touching the button will show a small widget\nwhere you can give your callsign and grid locator\n\
 the values are maintained between invocations of the plugin");
-	callsign_Button. events () .click([&]() {set_callSign(); });
+	callsign_Button.events().click([&]() {set_callSign(); });
 
-	subtractionButton.caption ("on");
-	subtractionButton.tooltip ("switch subtraction on or off");
-	subtractionButton. events().click([&]() {set_subtraction(); });
+	subtractionButton.caption("on");
+	subtractionButton.tooltip("switch subtraction on or off");
+	subtractionButton.events().click([&]() {set_subtraction(); });
 
-	quickModeButton.caption ("off");
-	quickModeButton.tooltip ("switch quickMode on or off");
+	quickModeButton.caption("off");
+	quickModeButton.tooltip("switch quickMode on or off");
 	quickModeButton.events().click([&]() {set_quickMode(); });
 
-	reportModeButton.caption ("off");
-	reportModeButton.tooltip ("switch report on or off");
-	reportModeButton.events().click([&]() {set_reportMode (); });
+	reportModeButton.caption("off");
+	reportModeButton.tooltip("switch report on or off");
+	reportModeButton.events().click([&]() {set_reportMode(); });
 
-	resetButton. caption ("reset");
-	resetButton. tooltip ("stop current activities and restart");
-	resetButton. events (). click ([&] () { handle_reset (); });
+	resetButton.caption("reset");
+	resetButton.tooltip("stop current activities and restart");
+	resetButton.events().click([&]() { handle_reset(); });
 
-	copyRightLabel. transparent (true);
-        copyRightLabel. fgcolor (nana::colors::white);
-        copyRightLabel. caption ("\xa9");
-        copyRightLabel. tooltip ("J van Katwijk");
+	copyRightLabel.transparent(true);
+	copyRightLabel.fgcolor(nana::colors::white);
+	copyRightLabel.caption("\xa9");
+	copyRightLabel.tooltip ("J van Katwijk, core software from Joe Taylor, Steven Franke");
 }
 
 void SDRunoPlugin_wsprForm::SettingsButton_Click() {
 	// TODO: Insert code here to show settings panel
 }
 
-void	SDRunoPlugin_wsprForm::set_band (const std::string &s) {
-	m_parent. set_band (s);
+void	SDRunoPlugin_wsprForm::set_band(const std::string& s) {
+	m_parent.set_band(s);
 }
 
-void	SDRunoPlugin_wsprForm::set_subtraction () {
-static bool subtraction = true;
+void	SDRunoPlugin_wsprForm::set_subtraction() {
+	static bool subtraction = true;
 	subtraction = !subtraction;
-	subtractionButton. caption (subtraction? "on" : "off");
-	m_parent. set_subtraction (subtraction);
+	subtractionButton.caption(subtraction ? "on" : "off");
+	m_parent.set_subtraction(subtraction);
 }
 
-void	SDRunoPlugin_wsprForm::set_quickMode   () {
-static bool quickMode = false;
+void	SDRunoPlugin_wsprForm::set_quickMode() {
+	static bool quickMode = false;
 	quickMode = !quickMode;
-	quickModeButton. caption (quickMode ? "on" : "off");
-	m_parent. set_quickMode (quickMode);
+	quickModeButton.caption(quickMode ? "on" : "off");
+	m_parent.set_quickMode(quickMode);
 }
 
-void	SDRunoPlugin_wsprForm::set_reportMode	() {
-static bool reportMode = false;
-	reportMode = ! reportMode;
-	reportModeButton. caption (reportMode ? "on" : "off");
-	m_parent. set_reportMode (reportMode);
+void	SDRunoPlugin_wsprForm::set_reportMode() {
+	static bool reportMode = false;
+	reportMode = !reportMode;
+	reportModeButton.caption(reportMode ? "on" : "off");
+	m_parent.set_reportMode(reportMode);
 }
 
-void	SDRunoPlugin_wsprForm::set_callSign	() {
-	m_parent. set_callSign	();
+void	SDRunoPlugin_wsprForm::set_callSign() {
+	m_parent.set_callSign();
 }
 
-void	SDRunoPlugin_wsprForm::show_status	(const std::string &s) {
-	statusLine. caption (s);
+void	SDRunoPlugin_wsprForm::show_status(const std::string& s) {
+	statusLine.caption(s);
 }
 
-void	SDRunoPlugin_wsprForm::show_results	(const std::string & s) {
-	resultLine. caption (s);
+void	SDRunoPlugin_wsprForm::show_results(const std::string& s) {
+	resultLine.caption(s);
 }
 
-void	SDRunoPlugin_wsprForm::addMessage	(const std::string &s) {
-std::string fin;
-	if (displayList. size () > 30)
-	   displayList. pop_back ();
-	displayList. push_front (s);
-	for (std::string e: displayList)
-	   fin += e + "\n";
+void	SDRunoPlugin_wsprForm::addMessage(const std::string& s) {
+	std::string topLine;
+	std::string fin;
+	topLine = "spot at hr:mn\t snr   \tdt   \tfrequency  \tdrift\t";
+	if (displayList.size() > 23)
+		displayList.pop_back();
+	displayList.push_front(s);
+	fin = topLine + "\n\n";
+	for (std::string e : displayList)
+		fin += e + "\n";
 
-	textBlock.caption (fin);
+	textBlock.caption(fin);
 }
 
-void	SDRunoPlugin_wsprForm::handle_reset	() {
-	m_parent. handle_reset ();
+void	SDRunoPlugin_wsprForm::handle_reset() {
+	m_parent.handle_reset();
+}
+
+void	SDRunoPlugin_wsprForm::display_callsign(const std::string& call) {
+	homeCall.caption(call);
+}
+
+void	SDRunoPlugin_wsprForm::display_grid(const std::string& loc) {
+	homeLoc.caption (loc);
+}
+
+void	SDRunoPlugin_wsprForm::show_printStatus(const std::string& status) {
+	printStatus. caption (status);
+}
+
+void	SDRunoPlugin_wsprForm::show_version (const std::string& v) {
+	versionLabel. caption (v);
 }
 

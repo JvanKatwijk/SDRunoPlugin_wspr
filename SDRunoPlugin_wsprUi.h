@@ -45,6 +45,10 @@ int	LoadY			();
 	void	set_reportMode	(bool);
 
 	void	handle_reset	();
+	void	show_printStatus	(const std::string &);
+	void	show_version		(const std::string &);
+	void	display_callsign	(const std::string &);
+	void	display_grid	(const std::string &);
 private:
 	
 	SDRunoPlugin_wspr & m_parent;

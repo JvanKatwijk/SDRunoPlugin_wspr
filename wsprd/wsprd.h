@@ -40,35 +40,35 @@ extern "C" {
 
 /* Option & config of decoder (Shared with the wsprd code) */
 struct decoder_options {
-    int  freq;		// Dial frequency
-    char rcall [13];	// Callsign of the RX station
-    char rloc [7];	// Locator of the RX station
-    bool  quickmode;     // Decoder option & tweak
-    int  usehashtable;  //  ''
-    int  npasses;       //  ''
-    bool  subtraction;   //  ''
+	int	freq;		// Dial frequency
+	char	rcall [13];	// Callsign of the RX station
+	char	rloc [7];	// Locator of the RX station
+	bool	quickmode;	// Decoder option & tweak
+	int	usehashtable;	//  ''
+	int	npasses;	//  ''
+	bool	subtraction;	//  ''
 };
 
 struct cand {
-    float  freq;
-    float  snr;
-    int    shift;
-    float  drift;
-    float  sync;
+	float	freq;
+	float	snr;
+	int	shift;
+	float	drift;
+	float	sync;
 };
 
 struct decoder_results {
-    double freq;
-    float  sync;
-    float  snr;
-    float  dt;
-    float  drift;
-    int    jitter;
-    char   message[23];
-    char   call[13];
-    char   loc[7];
-    char   pwr[3];
-    int    cycles;
+	double	freq;
+	float	sync;
+	float	snr;
+	float	dt;
+	float	drift;
+	int	jitter;
+	char	message [23];
+	char	call [13];
+	char	loc [7];
+	char	pwr [3];
+	int	cycles;
 };
 
 void sync_and_demodulate(float *id,
