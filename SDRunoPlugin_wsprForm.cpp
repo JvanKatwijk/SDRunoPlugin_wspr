@@ -321,6 +321,10 @@ the values are maintained between invocations of the plugin");
 	resetButton.tooltip("stop current activities and restart");
 	resetButton.events().click([&]() { handle_reset(); });
 
+	dumpButton. caption ("dump");
+	dumpButton. tooltip ("write results to file");
+	dumpButton. events (). click ([&] () {set_wsprDump ();});
+
 	copyRightLabel.transparent(true);
 	copyRightLabel.fgcolor(nana::colors::white);
 	copyRightLabel.caption("\xa9");
@@ -400,5 +404,13 @@ void	SDRunoPlugin_wsprForm::show_printStatus(const std::string& status) {
 
 void	SDRunoPlugin_wsprForm::show_version (const std::string& v) {
 	versionLabel. caption (v);
+}
+
+bool	SDRunoPlugin_wsprForm::set_wsprDump	() {
+	bool r = m_parent. set_wsprDump ();
+	if (r)
+	   dumpButton. caption ("writing");
+	else
+	   dumpButton. caption ("dump");
 }
 

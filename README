@@ -34,3 +34,7 @@ there is ample time to do the processing in parallel.
 In the Linux version decoding is dome by firing a single thread in which
 the function is executed.
 
+
+libcurl-4.dll libcrypto libgcc_s_dw2 libidn2-0 libwinpthread-1 libssh3-1 libssl-3 zlib1 libssp
+
+

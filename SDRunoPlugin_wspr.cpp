@@ -11,8 +11,8 @@
 #include        <atomic>
 #include	".\curl/curl.h"
 
-const char wsprnet_app_version[]  = "SDRuno-0.5";  // 10 chars max.!
-const	char *Version	= "0.5";
+const char wsprnet_app_version[]  = "SDRuno-0.6";  // 10 chars max.!
+const	char *Version	= "0.6";
 
 static
 int	gettimeofday (struct timeval* tv, struct timezone* tz) {
@@ -52,14 +52,13 @@ struct tm       *gtm;
 	                              IUnoPlugin (controller),
 	                              m_form	(*this, controller),
 	                              m_worker	(nullptr),
-	                              decimator_0 (17, 1000, 
-	                                                   SAMPLING_RATE, 16),
-	                              decimator_1 (11, 1000, 12000, 4),
-	                              decimator_2 (9, 150, 3000, 8),
+	                              decimator_0 (21, 1000, 
+	                                           SAMPLING_RATE, 16),
+	                              decimator_1 (21, 1000, 12000, 4),
+	                              decimator_2 (21, 150, 3000, 8),
 	                              inputBuffer (32 * 32768),
 	                              fft (512, false) {
 	m_controller	= &controller;
-	
    
 	memset (dec_options. rcall, 0, 13);
 	memset (dec_options. rloc, 0, 7);
@@ -78,7 +77,8 @@ struct tm       *gtm;
 	dec_options.	subtraction	= true;
 	dec_options.	quickmode	= false;
 	m_controller	-> SetVfoFrequency (0, (float)dec_options. freq);
-	m_controller	-> SetCenterFrequency (0, (float)dec_options. freq + 1500);
+	m_controller	-> SetCenterFrequency (0,
+	                                      (float)dec_options. freq + 1500);
 
 	m_form. show_version (Version);
 //
@@ -100,7 +100,9 @@ struct tm       *gtm;
 	else
 	   m_form. display_grid (gr);
 
-	m_controller	-> SetDemodulatorType (0, IUnoPluginController::DemodulatorIQOUT);
+	filePointer	= nullptr;
+	m_controller	-> SetDemodulatorType (0,
+	                             IUnoPluginController::DemodulatorIQOUT);
 	m_controller	-> RegisterAudioProcessor(0, this);
 	m_worker        =
 	        new std::thread (&SDRunoPlugin_wspr::workerFunction, this);
@@ -112,6 +114,8 @@ struct tm       *gtm;
 	m_worker	-> join ();
 //      m_controller    -> UnregisterStreamProcessor (0, this);
 	m_controller    -> UnregisterAudioProcessor (0, this);
+	if (filePointer != nullptr)
+	   fclose(filePointer);
 }
 
 void	SDRunoPlugin_wspr::HandleEvent (const UnoEvent& ev) {
@@ -148,13 +152,14 @@ static	int teller = 0;
 	         if (rx_state. savingSamples. load ()) {
 	            inputBuffer. putDataIntoBuffer (&sample, 1);
 	            teller ++;
-				if (teller % SIGNAL_SAMPLE_RATE == 0) 
-					m_form.show_status ("reading  " + std::to_string (teller / SIGNAL_SAMPLE_RATE));
+	            if (teller % SIGNAL_SAMPLE_RATE == 0) 
+	               m_form.show_status ("reading  " +
+	                     std::to_string (teller / SIGNAL_SAMPLE_RATE));
 			
 	            if (inputBuffer. GetRingBufferReadAvailable () >=
 	                               SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE) {
-					teller = 0;
-	                rx_state.savingSamples.store (false);
+	               teller = 0;
+	               rx_state. savingSamples.store (false);
 	            }
 	         }
 	      }
@@ -180,13 +185,25 @@ struct timeval lTime;
 	uint32_t usec  = sec * 1000000 + lTime. tv_usec;
 //
 //      waiting is for an even time in minutes, i.e. 120 seconds
-	uint32_t uwait	=  120000000 - usec - 1000;
+	uint32_t uwait	=  120000000 - usec - 10000;
 	while (uwait / 1000000 > 1) {
+	   if (rx_state. frequencyChange. load ()) {
+          rx_options. dialFreq      = newFrequency;
+          dec_options. freq         = newFrequency;
+          m_controller      -> SetVfoFrequency (0, (float)newFrequency);
+          m_controller      -> SetCenterFrequency (0,
+	                                    (float)newFrequency + 1500);
+          rx_state. frequencyChange. store (false);
+          m_form. show_status ("new freq");
+	// we cannot assume that the above statements do not take time, recompute the delay
+		  gettimeofday(&lTime, nullptr);
+		  uint32_t sec = lTime.tv_sec % 120;
+		  uint32_t usec = sec * 1000000 + lTime.tv_usec;
+		  uwait = 120000000 - usec - 10000;
+       }
 	   m_form. show_status ("waiting  " + std::to_string (uwait / 1000000));
 	   Sleep (1000); // sleep in milliseconds
 	   uwait -= 1000000;
-	   if (!rx_state.running.load())
-		   return;
 	}
 	if (uwait > 0)
 	   Sleep (uwait / 1000); 	// Sleep in milliseconds
@@ -220,18 +237,9 @@ int	cycleCounter	= 1;
 //
 	   inputBuffer. FlushRingBuffer ();
 //	This seems the right moment to honor switchof frequency
-	   if (rx_state. frequencyChange. load ()) {
-	      rx_options. dialFreq	= newFrequency;
-	      dec_options. freq		= newFrequency;
-	      m_controller	-> SetVfoFrequency (0, (float)newFrequency);
-	      m_controller	-> SetCenterFrequency (0, (float)newFrequency + 1500);
-	      rx_state. frequencyChange. store (false);
-	      m_form. show_status ("new freq");
-	   }
-//
 	   wait_to_start ();
 	   if (!rx_state.running. load ())
-		   break;
+	      break;
 	   rx_state. savingSamples. store (true);
 //
 //	and, while the reader callback is reading in the samples for the
@@ -299,14 +307,14 @@ struct tm	*gtm;
 	                                     std::to_string (gtm -> tm_min);
 
 	if (n_results == 0) {
-	   std::string message = "No spots: " + theTime;
+	   std::string message = "Nothing at " + theTime;
 	   m_form. addMessage (message);
 	   return;
 	}
 
 	printing. lock ();
 	for (uint32_t i = 0; i < n_results; i++) {
-	   std::string currentMessage  = "spot at " + theTime +"\t\t"+
+	   std::string currentMessage  = "at " + theTime +"\t\t"+
 	                    std::to_string (dec_results [i]. snr) + "\t" +
 		            std::to_string (dec_results [i]. dt) + "\t" +
 	                    std::to_string (dec_results [i]. freq) + "\t" +
@@ -315,6 +323,17 @@ struct tm	*gtm;
 	                    std::string (dec_results[i].loc) + "\t" +
 	                    std::string (dec_results[i].pwr);
 	   m_form. addMessage (currentMessage);
+	   if (filePointer != nullptr) {
+		   std::string currentMessage = "at " + theTime + ";" +
+			   std::to_string(dec_results[i].snr) + ";" +
+			   std::to_string(dec_results[i].dt) + ";" +
+			   std::to_string(dec_results[i].freq) + ";" +
+			   std::to_string(dec_results[i].drift) + ";" +
+			   std::string(dec_results[i].call) + ";" +
+			   std::string(dec_results[i].loc) + ";" +
+			   std::string(dec_results[i].pwr) + ";";
+	      fprintf (filePointer, "%s\n", currentMessage. c_str ());
+	   }
 	}
 	printing. unlock ();
 }
@@ -473,3 +492,35 @@ void	SDRunoPlugin_wspr::handle_reset	() {
 	rx_state. running. store (true);
 }
 
+bool	SDRunoPlugin_wspr::set_wsprDump	() {
+	if (filePointer == nullptr) {
+	   time_t now = time (0);
+	   std::string currentTime = ctime (&now);
+	   std::string defaultName =getenv ("HOMEPATH") + std::string ("\wspr_") + currentTime + ".csv";
+	   nana::filebox fb (0, false);
+	   fb. init_path (getenv ("HOMEPATH"));
+//	   fb. init_file (defaultName);
+	   fb. add_filter ("cv File", "*.csv");
+//	   fb. add_filter("All Files", "*.*");
+	   auto files = fb ();
+	   if (!files. empty ()) {
+	      printing. lock ();
+	      filePointer =
+	             fopen (files. front (). string (). c_str (), "w");
+	      if (filePointer != nullptr){
+	         std::string topLine =
+	                  "; snr; dr; freq; drift; call; loc; power;" ;
+	         fprintf (filePointer, "\n%s ; %s\n",
+	                            topLine. c_str (), currentTime);
+	      }
+	      printing. unlock ();
+	   }
+	}
+	else {
+	   printing. lock ();
+	   fclose (filePointer);
+	   filePointer = nullptr;
+	   printing. unlock ();
+	}
+	return filePointer != nullptr;
+}

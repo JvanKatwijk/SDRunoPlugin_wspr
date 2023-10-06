@@ -20,7 +20,6 @@
 #include	<complex>
 
 
-
 class SDRunoPlugin_wspr : public IUnoPlugin,
 	                          public IUnoStreamProcessor,
                                   public IUnoAudioProcessor {
@@ -52,6 +51,8 @@ virtual ~SDRunoPlugin_wspr ();
 	void		set_reportMode	(bool);
 
 	void		handle_reset	();
+
+	bool		set_wsprDump	();
 private:
 	void		printSpots	(uint32_t n_results);
 	void		postSpots	(uint32_t n_results);
@@ -69,6 +70,7 @@ private:
 	struct	decoder_options	dec_options;
 	struct	decoder_results	dec_results [50];
 
+	FILE		*filePointer;
 	struct plugin_settings {
 	   uint32_t	dialFreq;
 	   uint32_t	realFreq;

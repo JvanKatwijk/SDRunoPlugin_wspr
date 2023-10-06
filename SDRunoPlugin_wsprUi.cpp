@@ -183,4 +183,7 @@ void	SDRunoPlugin_wsprUi::show_version	(const std::string &s) {
 	   m_form -> show_version (s);
 }
 
+bool	SDRunoPlugin_wsprUi::set_wsprDump	() {
+	return m_parent. set_wsprDump	();
+}
 

@@ -48,7 +48,9 @@ int	LoadY			();
 	void	show_printStatus	(const std::string &);
 	void	show_version		(const std::string &);
 	void	display_callsign	(const std::string &);
-	void	display_grid	(const std::string &);
+	void	display_grid		(const std::string &);
+
+	bool	set_wsprDump		();
 private:
 	
 	SDRunoPlugin_wspr & m_parent;

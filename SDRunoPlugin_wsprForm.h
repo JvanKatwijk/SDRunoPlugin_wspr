@@ -51,6 +51,8 @@ public:
 	void	show_version		(const std::string& );
 	void	display_callsign	(const std::string &);
 	void	display_grid		(const std::string &);
+
+	bool	set_wsprDump		();
 private:
 
 	void Setup();
@@ -85,9 +87,11 @@ private:
 	nana::label statusLine	  {*this,
                                     nana::rectangle ( 170, 30, 120, 20)};
 	nana::label resultLine	  {*this,
-                                    nana::rectangle ( 300, 30, 100, 20)};
+                                    nana::rectangle ( 300, 30, 80, 20)};
 	nana::label printStatus	  {*this,
-	                            nana::rectangle ( 410, 30, 90, 20)};
+	                            nana::rectangle ( 390, 30, 70, 20)};
+	nana::button dumpButton   {*this,
+	                            nana::rectangle ( 470, 30, 50, 20)};
 	nana::button subtractionButton {*this,
                                     nana::rectangle ( 30, 60, 60, 20)};
 	nana::button quickModeButton {*this,
@@ -103,7 +107,7 @@ private:
 	                            nana::rectangle (380, 60, 60,  20)};
 	nana::label copyRightLabel {*this,
 		                        nana::rectangle(450, 60, 20, 20)};
-	nana::label  versionLabel {*this, nana::rectangle(480, 60, 20, 20)};
+	nana::label  versionLabel {*this, nana::rectangle(480, 60, 40, 20)};
 
 	std::list<std::string> displayList;
 	nana::label textBlock	  {*this,
