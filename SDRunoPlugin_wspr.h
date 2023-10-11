@@ -19,6 +19,7 @@
 
 #include	<complex>
 
+class	reporterWriter;
 
 class SDRunoPlugin_wspr : public IUnoPlugin,
 	                          public IUnoStreamProcessor,
@@ -48,14 +49,14 @@ virtual ~SDRunoPlugin_wspr ();
 
 	void		set_subtraction	(bool);
 	void		set_quickMode	(bool);
-	void		set_reportMode	(bool);
+	void		switch_reportMode	();
 
 	void		handle_reset	();
 
 	bool		set_wsprDump	();
 private:
 	void		printSpots	(uint32_t n_results);
-	void		postSpots	(uint32_t n_results);
+	void		postSpots	(uint32_t n_results, struct decoder_results *);
 
 	void		wait_to_start	();
 	IUnoPluginController *m_controller;
@@ -70,6 +71,7 @@ private:
 	struct	decoder_options	dec_options;
 	struct	decoder_results	dec_results [50];
 
+	reporterWriter	*theWriter;
 	FILE		*filePointer;
 	struct plugin_settings {
 	   uint32_t	dialFreq;

@@ -125,6 +125,21 @@ void	SDRunoPlugin_wsprUi::store_grid (const std::string &s) {
 	m_controller. SetConfigurationKey ("wspr.grid", s);
 }
 
+std::string SDRunoPlugin_wsprUi::load_antenna () {
+std::string antenna;
+	m_controller. GetConfigurationKey ("wspr.antenna", antenna);
+	if (antenna. empty ())
+	   return "";
+	return antenna;
+}
+
+void	SDRunoPlugin_wsprUi::store_antenna (const std::string &s) {
+	if (s. empty ())
+	   return;
+
+	m_controller. SetConfigurationKey ("wspr.antenna", s);
+}
+
 void	SDRunoPlugin_wsprUi::show_status	(const std::string &s) {
 	std::lock_guard<std::mutex> l (m_lock);
 	if (m_form != nullptr)
@@ -151,10 +166,16 @@ void	SDRunoPlugin_wsprUi::set_quickMode   (bool b) {
 	m_parent. set_quickMode (b);
 }
 
-void	SDRunoPlugin_wsprUi::set_reportMode   (bool b) {
-	m_parent. set_reportMode (b);
+void	SDRunoPlugin_wsprUi::switch_reportMode   () {
+	m_parent. switch_reportMode ();
 }
 
+void	SDRunoPlugin_wsprUi::show_reportMode	(bool b) {
+	std::lock_guard<std::mutex> l (m_lock);
+	if (m_form != nullptr)
+	   m_form -> show_reportMode (b);
+}
+	
 void	SDRunoPlugin_wsprUi::handle_reset	() {
 	m_parent. handle_reset ();
 }

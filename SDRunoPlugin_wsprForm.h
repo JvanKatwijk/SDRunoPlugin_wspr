@@ -44,13 +44,14 @@ public:
 
 	void	set_subtraction	();
 	void	set_quickMode	();
-	void	set_reportMode	();
+	void	switch_reportMode	();
 
 	void	handle_reset	();
 	void	show_printStatus	(const std::string &);
 	void	show_version		(const std::string& );
 	void	display_callsign	(const std::string &);
 	void	display_grid		(const std::string &);
+	void	show_reportMode		(bool);
 
 	bool	set_wsprDump		();
 private:

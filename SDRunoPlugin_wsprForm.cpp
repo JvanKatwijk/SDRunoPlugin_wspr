@@ -313,9 +313,9 @@ the values are maintained between invocations of the plugin");
 	quickModeButton.tooltip("switch quickMode on or off");
 	quickModeButton.events().click([&]() {set_quickMode(); });
 
-	reportModeButton.caption("off");
+	reportModeButton.caption ("off");
 	reportModeButton.tooltip("switch report on or off");
-	reportModeButton.events().click([&]() {set_reportMode(); });
+	reportModeButton.events().click([&]() {switch_reportMode(); });
 
 	resetButton.caption("reset");
 	resetButton.tooltip("stop current activities and restart");
@@ -353,11 +353,12 @@ void	SDRunoPlugin_wsprForm::set_quickMode() {
 	m_parent.set_quickMode(quickMode);
 }
 
-void	SDRunoPlugin_wsprForm::set_reportMode() {
-	static bool reportMode = false;
-	reportMode = !reportMode;
-	reportModeButton.caption(reportMode ? "on" : "off");
-	m_parent.set_reportMode(reportMode);
+void	SDRunoPlugin_wsprForm::switch_reportMode () {
+	m_parent.switch_reportMode();
+}
+
+void	SDRunoPlugin_wsprForm::show_reportMode	(bool b) {
+	reportModeButton. caption (b ? "on" : "off");
 }
 
 void	SDRunoPlugin_wsprForm::set_callSign() {
