@@ -44,7 +44,7 @@ struct decoder_options {
 	char	rcall [13];	// Callsign of the RX station
 	char	rloc [7];	// Locator of the RX station
 	bool	quickmode;	// Decoder option & tweak
-	int	usehashtable;	//  ''
+	bool	usehashtable;	//  ''
 	int	npasses;	//  ''
 	bool	subtraction;	//  ''
 };

@@ -55,8 +55,8 @@ virtual ~SDRunoPlugin_wspr ();
 
 	bool		set_wsprDump	();
 private:
-	void		printSpots	(uint32_t n_results);
-	void		postSpots	(uint32_t n_results, struct decoder_results *);
+	void		printSpots	(std::vector<decoder_results> &);
+	void		postSpots	(std::vector<decoder_results> &);
 
 	void		wait_to_start	();
 	IUnoPluginController *m_controller;
@@ -94,6 +94,14 @@ private:
 	float		samples_i [SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE];
 	float		samples_q [SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE];
 	int		newFrequency;
+	typedef struct {
+		time_t time;
+		struct decoder_results callRecord;
+	} listElement;
+
+	std::list<listElement> resultQueue;
+	bool		recentlySeen (struct decoder_results &lastRes,
+                                         time_t time);
 
 	std::mutex	printing;
 	void		processBuffer	(std::complex<float> *);

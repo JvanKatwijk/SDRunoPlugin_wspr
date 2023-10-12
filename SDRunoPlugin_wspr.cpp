@@ -2,6 +2,7 @@
 #include	<unoevent.h>
 #include	<iunoplugincontroller.h>
 #include	<vector>
+#include	<list>
 #include	<sstream>
 #include	<chrono>
 #include	<Windows.h>
@@ -74,7 +75,7 @@ struct tm       *gtm;
 	rx_options.	report		= false;
 	theWriter			= nullptr;
 	dec_options.	freq		= rx_options. dialFreq;
-	dec_options.	usehashtable	= 0;
+	dec_options.	usehashtable	= false;
 	dec_options.	npasses		= 2;
 	dec_options.	subtraction	= true;
 	dec_options.	quickmode	= false;
@@ -103,6 +104,7 @@ struct tm       *gtm;
 	   m_form. display_grid (gr);
 
 	filePointer	= nullptr;
+	theWriter = nullptr;
 	m_controller	-> SetDemodulatorType (0,
 	                             IUnoPluginController::DemodulatorIQOUT);
 	m_controller	-> RegisterAudioProcessor(0, this);
@@ -117,6 +119,8 @@ struct tm       *gtm;
 	m_controller    -> UnregisterAudioProcessor (0, this);
 	if (filePointer != nullptr)
 	   fclose (filePointer);
+	if (theWriter != nullptr)
+		delete theWriter;
 }
 
 void	SDRunoPlugin_wspr::HandleEvent (const UnoEvent& ev) {
@@ -226,7 +230,7 @@ std::complex<float> buffer [SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE];
 void	SDRunoPlugin_wspr::workerFunction() {
 	int	cycleCounter = 1;
 	rx_state.running.store(true);
-	m_form.show_results("running");
+	m_form. show_results ("running");
 	//
 	//	at first we wait until we have an "even" second
 	wait_to_start();
@@ -303,15 +307,19 @@ void	SDRunoPlugin_wspr::processBuffer (std::complex<float> *b) {
 	             dec_options,
 	             dec_results,
 	             &n_results);
-	if (!rx_options. report || (n_results == 0)) {
-	   m_form. show_printStatus ("not printing");
-	}
-	else
-	   postSpots (n_results, dec_results);
-	printSpots	(n_results);
+	time_t localtime;
+	time(&localtime);
+        localtime = localtime - 120 + 1;
+	std::vector<struct decoder_results> resultStack;
+	for (int i = 0; i < n_results; i ++)
+	   if (!recentlySeen (dec_results [i], localtime)) 
+	      resultStack. push_back (dec_results [i]);
+	   printSpots (resultStack);
+	if (rx_options. report && (resultStack. size () > 0)) 
+	   postSpots (resultStack);
 }
 
-void	SDRunoPlugin_wspr::printSpots (uint32_t n_results) {
+void	SDRunoPlugin_wspr::printSpots (std::vector<decoder_results> &results) {
 time_t localtime;
 struct tm	*gtm;
 
@@ -321,32 +329,32 @@ struct tm	*gtm;
 	std::string theTime	= std::to_string (gtm -> tm_hour) + "-" +
 	                                     std::to_string (gtm -> tm_min);
 
-	if (n_results == 0) {
+	if (results. size () == 0) {
 	   std::string message = "Nothing at " + theTime;
 	   m_form. addMessage (message);
 	   return;
 	}
 
 	printing. lock ();
-	for (uint32_t i = 0; i < n_results; i++) {
+	for (auto &res: results) {
 	   std::string currentMessage  = "at " + theTime +"\t\t"+
-	                    std::to_string (dec_results [i]. snr) + "\t" +
-		            std::to_string (dec_results [i]. dt) + "\t" +
-	                    std::to_string (dec_results [i]. freq) + "\t" +
-	                    std::to_string (dec_results [i]. drift) + "\t" + 
-	                    std::string (dec_results[i].call) + "\t" +
-	                    std::string (dec_results[i].loc) + "\t" +
-	                    std::string (dec_results[i].pwr);
+	                    std::to_string (res. snr) + "\t" +
+		            std::to_string (res. dt) + "\t" +
+	                    std::to_string (res. freq) + "\t" +
+	                    std::to_string (res. drift) + "\t" + 
+	                    std::string (res. call) + "\t" +
+	                    std::string (res. loc) + "\t" +
+	                    std::string (res. pwr);
 	   m_form. addMessage (currentMessage);
 	   if (filePointer != nullptr) {
 		   std::string currentMessage = "at " + theTime + ";" +
-			   std::to_string(dec_results[i].snr) + ";" +
-			   std::to_string(dec_results[i].dt) + ";" +
-			   std::to_string(dec_results[i].freq) + ";" +
-			   std::to_string(dec_results[i].drift) + ";" +
-			   std::string(dec_results[i].call) + ";" +
-			   std::string(dec_results[i].loc) + ";" +
-			   std::string(dec_results[i].pwr) + ";";
+			   std::to_string (res. snr) + ";" +
+			   std::to_string (res. dt) + ";" +
+			   std::to_string (res. freq) + ";" +
+			   std::to_string (res. drift) + ";" +
+			   std::string (res. call) + ";" +
+			   std::string (res. loc) + ";" +
+			   std::string (res. pwr) + ";";
 	      fprintf (filePointer, "%s\n", currentMessage. c_str ());
 	   }
 	}
@@ -354,17 +362,16 @@ struct tm	*gtm;
 }
 
 //	Report on PSK reporter
-void	SDRunoPlugin_wspr::postSpots (uint32_t n_results,
-	                              struct decoder_results * results) {
+void	SDRunoPlugin_wspr::postSpots (std::vector<decoder_results> &results) {
 
 	if ((dec_options. rcall [0] == 0) ||
 	    (dec_options. rloc  [0] == 0))
 	   return;
 
-	m_form. show_printStatus ("posting " + std::to_string (n_results));
+	m_form. show_printStatus ("posting " + std::to_string (results. size ()));
 	printing. lock ();
-	for (uint32_t i = 0; i < n_results; i++) 
-	   theWriter	-> addMessage (results [i]);
+	for (auto &res : results) 
+	   theWriter	-> addMessage (res);
 	theWriter	-> sendMessages ();
 	printing. unlock ();
 }
@@ -512,3 +519,26 @@ bool	SDRunoPlugin_wspr::set_wsprDump	() {
 	}
 	return filePointer != nullptr;
 }
+
+
+static
+bool	equals (char *a, char *b) {
+	return std::string(a) == std::string(b);
+}
+
+bool	SDRunoPlugin_wspr::recentlySeen (struct decoder_results &lastRes, 
+	                                 time_t time) {
+	while (resultQueue. front (). time + 2 * 300 < time)
+	   resultQueue. pop_front ();
+
+	for (auto &res : resultQueue) 
+	  if (equals (lastRes. call, res. callRecord. call))
+	      return true;
+
+	listElement newEl;
+	newEl. time = time;
+	newEl. callRecord = lastRes;
+	resultQueue. push_back (newEl);
+	return false;
+}
+	   

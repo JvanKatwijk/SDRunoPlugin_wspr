@@ -305,17 +305,17 @@ void	SDRunoPlugin_wsprForm::Setup() {
 the values are maintained between invocations of the plugin");
 	callsign_Button.events().click([&]() {set_callSign(); });
 
-	subtractionButton.caption("on");
-	subtractionButton.tooltip("switch subtraction on or off");
-	subtractionButton.events().click([&]() {set_subtraction(); });
+	subtractionButton.caption ("on");
+	subtractionButton.tooltip ("switch subtraction on or off");
+	subtractionButton.events ().click([&]() {set_subtraction (); });
 
-	quickModeButton.caption("off");
-	quickModeButton.tooltip("switch quickMode on or off");
-	quickModeButton.events().click([&]() {set_quickMode(); });
+	quickModeButton.caption ("off");
+	quickModeButton.tooltip ("switch quickMode on or off");
+	quickModeButton.events().click([&]() {set_quickMode (); });
 
-	reportModeButton.caption ("off");
-	reportModeButton.tooltip("switch report on or off");
-	reportModeButton.events().click([&]() {switch_reportMode(); });
+	reportModeButton.caption ("no report");
+	reportModeButton.tooltip ("switch reporting to pskreporter on or off");
+	reportModeButton.events().click([&]() {switch_reportMode (); });
 
 	resetButton.caption("reset");
 	resetButton.tooltip("stop current activities and restart");
@@ -358,18 +358,18 @@ void	SDRunoPlugin_wsprForm::switch_reportMode () {
 }
 
 void	SDRunoPlugin_wsprForm::show_reportMode	(bool b) {
-	reportModeButton. caption (b ? "on" : "off");
+	reportModeButton. caption (b ? "reporting" : "no report");
 }
 
-void	SDRunoPlugin_wsprForm::set_callSign() {
+void	SDRunoPlugin_wsprForm::set_callSign () {
 	m_parent.set_callSign();
 }
 
-void	SDRunoPlugin_wsprForm::show_status(const std::string& s) {
+void	SDRunoPlugin_wsprForm::show_status (const std::string& s) {
 	statusLine.caption(s);
 }
 
-void	SDRunoPlugin_wsprForm::show_results(const std::string& s) {
+void	SDRunoPlugin_wsprForm::show_results (const std::string& s) {
 	resultLine.caption(s);
 }
 
