@@ -14,8 +14,11 @@
 
 #include	"psk-reporter.h"
 
+#define  _USE_MATH_DEFINES
+#include <math.h>
+
 const char wsprnet_app_version[]  = "SDRuno-wspr";  // 10 chars max.!
-const	char *Version	= "0.7";
+const	char *Version	= "1.0";
 
 static
 int	gettimeofday (struct timeval* tv, struct timezone* tz) {
@@ -70,7 +73,8 @@ struct tm       *gtm;
 	rx_state.	frequencyChange. store (false);
 	rx_state.	running. store (false);
 	rx_state.	savingSamples. store (false);
-	rx_options.	dialFreq	= 14095600;
+//	rx_options.	dialFreq	= 14095600;
+	rx_options.	dialFreq	= m_form. getLastFrequency ();
 	rx_options.	realFreq	= rx_options. dialFreq;
 	rx_options.	report		= false;
 	theWriter			= nullptr;
@@ -82,7 +86,13 @@ struct tm       *gtm;
 	m_controller	-> SetVfoFrequency (0, (float)dec_options. freq);
 	m_controller	-> SetCenterFrequency (0,
 	                                      (float)dec_options. freq + 1500);
-
+	tones. resize (SAMPLING_RATE);
+	for (int i = 0; i < SAMPLING_RATE; i ++)
+	   tones [i] =
+	      std::complex<float> (cos ((float)i * TWOPI / SAMPLING_RATE),
+	                           sin ((float)i * TWOPI / SAMPLING_RATE));
+	tonePhase	= 0;
+	toneFreq	= 350;		// Hz
 	m_form. show_version (Version);
 //
 //	note that the dec_options. rcall and rloc are set to zero already
@@ -157,10 +167,8 @@ static	int teller = 0;
 
 	if (!modified) {
 	   for (int i = 0; i < length; i++) {
-	      std::complex<float> sample =
-	                   std::complex<float>(buffer [2 * i + 1],
-	                                       buffer [2 * i]);
-
+		   std::complex<float> sample =
+			   std::complex<float>(buffer[2 * i + 1], buffer[2 * i]);
 	      if (decimator_0. Pass (sample, &sample) &&
 	          decimator_1. Pass (sample, &sample) &&
 	          decimator_2. Pass (sample, &sample)) {
@@ -241,41 +249,41 @@ void	SDRunoPlugin_wspr::workerFunction() {
 	//
 	//	and of course, we have to wait now
 	while (rx_state.running.load()) {
-		m_form.show_status("reader is working");
-		while (rx_state.running.load() &&
-			(inputBuffer.GetRingBufferReadAvailable() <
+	   m_form.show_status("reader is working");
+	   while (rx_state.running.load() &&
+	          (inputBuffer.GetRingBufferReadAvailable() <
 				SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE)) {
-			Sleep(100);	// here: milli seconds
-		}
-		if (!rx_state.running.load())
-			break;
+	      Sleep(100);	// here: milli seconds
+	   }
+	   if (!rx_state.running.load())
+	      break;
 
-		//	   The "reader" probably has already set the flag to false
-		//	   but we'll do it anyway
-		rx_state.savingSamples.store(false);
-		//
-		//	   read the buffer, length is known
-		int N = inputBuffer.
-			getDataFromBuffer(buffer, SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE);
-		if (N < SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE) 
-			return;		// should not happen
-			//
-			inputBuffer.FlushRingBuffer();
-			//	This seems the right moment to honor switchof frequency
-			wait_to_start();
-			if (!rx_state.running.load())
-				break;
-			rx_state.savingSamples.store(true);
-			//
-			//	and, while the reader callback is reading in the samples for the
-			//	next 114 to 117 seconds and putting them into the buffer,
-			//	there is ample time to process the data of the previous cycle
-			m_form.show_results("buffer " +
-				std::to_string(cycleCounter));
-			processBuffer(buffer);
-			cycleCounter++;
-		}
+//	The "reader" probably has already set the flag to false
+//	but we'll do it anyway
+	   rx_state.savingSamples.store(false);
+//
+//	   read the buffer, length is known
+	   int N = inputBuffer.
+	                getDataFromBuffer (buffer,
+	                                   SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE);
+	   if (N < SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE) 
+	      return;		// should not happen
+//
+	   inputBuffer.FlushRingBuffer();
+//	This seems the right moment to honor switchof frequency
+	   wait_to_start();
+	   if (!rx_state.running.load())
+	      break;
+	   rx_state. savingSamples. store (true);
+//
+//	and, while the reader callback is reading in the samples for the
+//	next 114 to 117 seconds and putting them into the buffer,
+//	there is ample time to process the data of the previous cycle
+	   m_form.show_results ("buffer " + std::to_string(cycleCounter));
+	   processBuffer(buffer);
+	   cycleCounter++;
 	}
+}
 
 //	filling the buffer takes about 116 seconds, during that
 //	period we process the previously filled buffer
@@ -407,6 +415,7 @@ void	SDRunoPlugin_wspr::set_band (const std::string &s) {
 	      rx_state. frequencyChange. store (true);
 	      newFrequency	= freqTable [i]. dialFreq;
 	      m_form. show_status ("change waiting");
+	      m_form. saveLastFrequency (newFrequency);
 	      return;
 	   }
 	}
@@ -506,7 +515,7 @@ bool	SDRunoPlugin_wspr::set_wsprDump	() {
 	         std::string topLine =
 	                  "; snr; dr; freq; drift; call; loc; power;" ;
 	         fprintf (filePointer, "\n%s ; %s\n",
-	                            topLine. c_str (), currentTime);
+	                            topLine. c_str (), currentTime. c_str ());
 	      }
 	      printing. unlock ();
 	   }

@@ -186,6 +186,7 @@ void	SDRunoPlugin_wsprUi::display_callsign	(const std::string &s) {
 	   m_form -> display_callsign (s);
 }
 
+
 void	SDRunoPlugin_wsprUi::display_grid	(const std::string &s) {
 	std::lock_guard<std::mutex> l (m_lock);
 	if (m_form != nullptr)
@@ -208,3 +209,16 @@ bool	SDRunoPlugin_wsprUi::set_wsprDump	() {
 	return m_parent. set_wsprDump	();
 }
 
+void	SDRunoPlugin_wsprUi::saveLastFrequency	(int frequency) {
+//	m_controller. SetConfigurationKey ("wspr.lastFreq", std::to_string (frequency));
+}
+
+int	SDRunoPlugin_wsprUi::getLastFrequency () {
+std::string temp = "";
+//	m_controller.GetConfigurationKey ("wspr.lastFreq", temp);
+	if (temp == "")
+	   return 14095600;
+	return std::stoi (temp);
+}
+
+	

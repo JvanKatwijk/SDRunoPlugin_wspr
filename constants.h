@@ -13,6 +13,7 @@
 #define DF05                DF * 0.5
 #define DF15                DF * 1.5
 #define TWOPIDT             2.0 * M_PI * DT
+#define	TWOPI		    2.0 * M_PI
 
 #define MHz(x)  (1000000 * x)
 

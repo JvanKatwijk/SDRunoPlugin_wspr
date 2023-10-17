@@ -58,6 +58,10 @@ private:
 	void		printSpots	(std::vector<decoder_results> &);
 	void		postSpots	(std::vector<decoder_results> &);
 
+	std::vector<std::complex<float>> tones;
+	int		tonePhase;
+	int		toneFreq;
+
 	void		wait_to_start	();
 	IUnoPluginController *m_controller;
 	void		workerFunction	();

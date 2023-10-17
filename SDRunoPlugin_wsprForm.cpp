@@ -325,6 +325,9 @@ the values are maintained between invocations of the plugin");
 	dumpButton. tooltip ("write results to file");
 	dumpButton. events (). click ([&] () {set_wsprDump ();});
 
+	textBlock. transparent (true);
+	textBlock. fgcolor (nana::colors::white);
+
 	copyRightLabel.transparent(true);
 	copyRightLabel.fgcolor(nana::colors::white);
 	copyRightLabel.caption("\xa9");

@@ -18,16 +18,19 @@ class SDRunoPlugin_wspr;
 class SDRunoPlugin_wsprUi {
 public:
 
-	SDRunoPlugin_wsprUi	(SDRunoPlugin_wspr& parent,
-	                            IUnoPluginController& controller);
-	~SDRunoPlugin_wsprUi	();
+		SDRunoPlugin_wsprUi	(SDRunoPlugin_wspr& parent,
+	                                 IUnoPluginController& controller);
+		~SDRunoPlugin_wsprUi	();
 
-void	HandleEvent		(const UnoEvent& evt);
-void	FormClosed		();
-void	ShowUi			();
+	void	HandleEvent		(const UnoEvent& evt);
+	void	FormClosed		();
+	void	ShowUi			();
 
-int	LoadX			();
-int	LoadY			();
+	int	LoadX			();
+	int	LoadY			();
+
+	int	getLastFrequency	();
+	void	saveLastFrequency	(int);
 
 	void	set_band	(const std::string &);
 	void	set_callSign	();
