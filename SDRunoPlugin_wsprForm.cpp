@@ -296,9 +296,7 @@ void	SDRunoPlugin_wsprForm::Setup() {
 	bandSelector.push_back ("23cm");
 	bandSelector.option (7);
 	bandSelector. tooltip ("predefined frequencies, known for wspr");
-	bandSelector. events ().
-		selected([&](const nana::arg_combox& ar_cbx) {
-		set_band(ar_cbx.widget.caption()); });
+
 
 	callsign_Button.caption("callsign");
 	callsign_Button.tooltip("Touching the button will show a small widget\nwhere you can give your callsign and grid locator\n\
@@ -417,4 +415,14 @@ bool	SDRunoPlugin_wsprForm::set_wsprDump	() {
 	else
 	   dumpButton. caption ("dump");
 }
+
+void	SDRunoPlugin_wsprForm::initBand (const std::string &s) {
+	for (int i = 0; i < bandSelector. the_number_of_options (); i ++)
+	   if (bandSelector. text(i) == s)
+	      bandSelector. option (i);
+	bandSelector.events().
+		selected([&](const nana::arg_combox& ar_cbx) {
+		set_band(ar_cbx.widget.caption()); });
+}
+
 

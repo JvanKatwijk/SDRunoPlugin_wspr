@@ -50,7 +50,41 @@ struct tm       *gtm;
 	return std::to_string (gtm -> tm_hour) + "-" +
 	              std::to_string (gtm -> tm_min);
 }
-//
+
+
+struct {
+	std::string bandName;
+	int	dialFreq;
+} freqTable [] = {
+	{"LF",	136000},
+	{"MF",	474200},
+	{"160m", 1836600},
+	{"80m", 3568600},
+	{"60m", 5287200},
+	{"40m", 7038600},
+	{"30m", 10138700},
+	{"20m", 14095600},
+	{"17m", 18104600},
+	{"15m", 21094600},
+	{"12m", 24924600},
+	{"10m", 28124600},
+	{"6m",  50293000},
+	{"4m",  70091000},
+	{"2m",  144489000},
+	{"1m15", 222280000},
+	{"70cm", 432300000},
+	{"23cm", 1296500000},
+	{"", -1}
+};
+
+static inline
+int	getFreq	(const std::string &s) {
+	for (int i = 0; freqTable [i]. dialFreq != -1; i ++)
+	   if (freqTable [i]. bandName == s)
+	      return freqTable [i]. dialFreq;
+	return -1;
+}
+
 //	The incoming signal has a rate of 192000, in step 1 we decimate
 //	to 6000, in step 2 to 375
 	SDRunoPlugin_wspr::
@@ -73,8 +107,9 @@ struct tm       *gtm;
 	rx_state.	frequencyChange. store (false);
 	rx_state.	running. store (false);
 	rx_state.	savingSamples. store (false);
-//	rx_options.	dialFreq	= 14095600;
-	rx_options.	dialFreq	= m_form. getLastFrequency ();
+	m_form. initBand ();
+	std::string theBand		= m_form. get_LastBand ();
+	rx_options.	dialFreq	= getFreq (theBand);
 	rx_options.	realFreq	= rx_options. dialFreq;
 	rx_options.	report		= false;
 	theWriter			= nullptr;
@@ -384,41 +419,15 @@ void	SDRunoPlugin_wspr::postSpots (std::vector<decoder_results> &results) {
 	printing. unlock ();
 }
 
-struct {
-	std::string bandName;
-	int	dialFreq;
-} freqTable [] = {
-	{"LF",	136000},
-	{"MF",	474200},
-	{"160m", 1836600},
-	{"80m", 3568600},
-	{"60m", 5287200},
-	{"40m", 7038600},
-	{"30m", 10138700},
-	{"20m", 14095600},
-	{"17m", 18104600},
-	{"15m", 21094600},
-	{"12m", 24924600},
-	{"10m", 28124600},
-	{"6m",  50293000},
-	{"4m",  70091000},
-	{"2m",  144489000},
-	{"1m15", 222280000},
-	{"70cm", 432300000},
-	{"23cm", 1296500000},
-	{"", -1}
-};
-
 void	SDRunoPlugin_wspr::set_band (const std::string &s) {
-	for (int i = 0; freqTable [i]. dialFreq != -1; i ++) {
-	   if (freqTable [i]. bandName == s) {
-	      rx_state. frequencyChange. store (true);
-	      newFrequency	= freqTable [i]. dialFreq;
-	      m_form. show_status ("change waiting");
-	      m_form. saveLastFrequency (newFrequency);
-	      return;
-	   }
-	}
+int theFreq	= getFreq (s);
+
+	if (theFreq == -1)
+	   return;
+
+	rx_state. frequencyChange. store (true);
+	newFrequency	= theFreq;
+	m_form. show_status ("change waiting");
 }
 
 void    SDRunoPlugin_wspr::set_callSign () {

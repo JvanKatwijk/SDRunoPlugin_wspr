@@ -86,6 +86,7 @@ void	SDRunoPlugin_wsprUi::FormClosed() {
 }
 
 void	SDRunoPlugin_wsprUi::set_band	(const std::string &s) {
+	m_controller. SetConfigurationKey ("wspr.lastBand", s);
 	m_parent. set_band (s);
 }
 
@@ -209,16 +210,23 @@ bool	SDRunoPlugin_wsprUi::set_wsprDump	() {
 	return m_parent. set_wsprDump	();
 }
 
-void	SDRunoPlugin_wsprUi::saveLastFrequency	(int frequency) {
-//	m_controller. SetConfigurationKey ("wspr.lastFreq", std::to_string (frequency));
+void	SDRunoPlugin_wsprUi::initBand	() {
+std::string band;
+	m_controller.GetConfigurationKey ("wspr.lastBand", band);
+	std::lock_guard<std::mutex> l (m_lock);
+	if (m_form != nullptr)
+		if (band != "")
+	       m_form -> initBand (band);
+	    else
+	       m_form -> initBand ("80m");
 }
 
-int	SDRunoPlugin_wsprUi::getLastFrequency () {
-std::string temp = "";
-//	m_controller.GetConfigurationKey ("wspr.lastFreq", temp);
-	if (temp == "")
-	   return 14095600;
-	return std::stoi (temp);
+std::string	SDRunoPlugin_wsprUi::get_LastBand () {
+std::string band = "";
+	m_controller.GetConfigurationKey ("wspr.lastBand", band);
+	if (band == "")
+	   return "20m";
+	return band;
 }
 
 	

@@ -29,8 +29,8 @@ public:
 	int	LoadX			();
 	int	LoadY			();
 
-	int	getLastFrequency	();
-	void	saveLastFrequency	(int);
+	void	initBand		();
+	std::string get_LastBand	();
 
 	void	set_band	(const std::string &);
 	void	set_callSign	();

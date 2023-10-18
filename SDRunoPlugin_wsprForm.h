@@ -42,6 +42,7 @@ public:
 	void	show_results	(const std::string &);
 	void	addMessage	(const std::string &);
 
+	void	initBand	(const std::string &);
 	void	set_subtraction	();
 	void	set_quickMode	();
 	void	switch_reportMode	();
