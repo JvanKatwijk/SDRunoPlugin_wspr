@@ -331,6 +331,7 @@ void	SDRunoPlugin_wspr::processBuffer (std::complex<float> *b) {
 	}
 
 	maxSig = 0.5 / maxSig;
+	maxSig = 1;
 	for (int i = 0; i < SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE; i++) {
 	   samples_i [i] = maxSig * real (b [i]);
 	   samples_q [i] = maxSig * imag (b [i]);
