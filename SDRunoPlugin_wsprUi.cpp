@@ -130,7 +130,7 @@ std::string SDRunoPlugin_wsprUi::load_antenna () {
 std::string antenna;
 	m_controller. GetConfigurationKey ("wspr.antenna", antenna);
 	if (antenna. empty ())
-	   return "";
+	   return "unknown";
 	return antenna;
 }
 

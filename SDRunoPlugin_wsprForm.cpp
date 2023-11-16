@@ -296,7 +296,8 @@ void	SDRunoPlugin_wsprForm::Setup() {
 	bandSelector.push_back ("23cm");
 	bandSelector.option (7);
 	bandSelector. tooltip ("predefined frequencies, known for wspr");
-
+//
+//	we wait adding the event handler unyil we have set the option
 
 	callsign_Button.caption("callsign");
 	callsign_Button.tooltip("Touching the button will show a small widget\nwhere you can give your callsign and grid locator\n\
@@ -325,6 +326,24 @@ the values are maintained between invocations of the plugin");
 
 	textBlock. transparent (true);
 	textBlock. fgcolor (nana::colors::white);
+
+	statusLine. transparent (true);
+	statusLine. fgcolor (nana::colors::white);
+
+	resultLine. transparent (true);
+	resultLine. fgcolor (nana::colors::white);
+
+	printStatus. transparent (true);
+	printStatus. fgcolor (nana::colors::white);
+
+	homeCall. transparent (true);
+	homeCall. fgcolor (nana::colors::white);
+
+	homeLoc. transparent (true);
+	homeLoc. fgcolor (nana::colors::white);
+
+	versionLabel. transparent (true);
+	versionLabel. fgcolor (nana::colors::white);
 
 	copyRightLabel.transparent(true);
 	copyRightLabel.fgcolor(nana::colors::white);

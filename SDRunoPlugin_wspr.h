@@ -62,7 +62,7 @@ private:
 	int		tonePhase;
 	int		toneFreq;
 
-	void		wait_to_start	();
+	void		honor_freqRequest	();
 	IUnoPluginController *m_controller;
 	void		workerFunction	();
 	std::mutex	m_lock;

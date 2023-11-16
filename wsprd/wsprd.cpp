@@ -90,7 +90,7 @@ float	c0 [NSPERSYM], s0 [NSPERSYM],
         c1 [NSPERSYM], s1 [NSPERSYM],
         c2 [NSPERSYM], s2 [NSPERSYM],
         c3 [NSPERSYM], s3 [NSPERSYM];
-float	fsymb[NSYM];
+float	fsymb [NSYM];
 
 float	fbest = 0.0, fsum  = 0.0, f2sum = 0.0;
 int	best_shift = 0;
@@ -387,6 +387,7 @@ float	refi [SIGNAL_SAMPLES] = {0},
 }
 
 int	wspr_decode (fftHandler *fft,
+	             SDRunoPlugin_wsprUi *m_form,
 	             float  *idat, float  *qdat, 
 	             int    samples,
 	             struct decoder_options options, 
@@ -419,7 +420,7 @@ int   ifmin;
 int   ifmax;
 
 /* Decoder flags */
-int   worth_a_try;
+bool   worth_a_try;
 int   uniques = 0;
 
 /* CPU usage stats */
@@ -476,7 +477,7 @@ char  loctab [32768 * 5] = {0};
 	const int blocks = 4 * floor (samples / 512) - 1;
 	float *ps [512] ;
 	for (int i = 0; i < 512; i ++) {
-	   ps[i] = new float[blocks];
+	   ps [i] = new float [blocks];
 	   memset (ps [i], 0, sizeof (float) * blocks);
 	}
 
@@ -581,10 +582,10 @@ char  loctab [32768 * 5] = {0};
 
 	   int nr_candidates = 0;
 	   bool candidate;
-	   for (int j = 1; (j < 410 ) && (nr_candidates < 200); j++) {
+	   for (int j = 1; (j < 410 ) && (nr_candidates < 100); j++) {
 	      candidate = (smspec [j] > smspec [j - 1]) &&
 	                  (smspec [j] > smspec [j + 1]) &&
-	                  (nr_candidates < 200);
+	                  (nr_candidates < 100);
 	      if (candidate) {
 	         candidates [nr_candidates]. freq = (j - 205) * (DF / 2.0);
 	         candidates [nr_candidates]. snr =
@@ -593,6 +594,7 @@ char  loctab [32768 * 5] = {0};
 	      }
 	   }
 
+	   m_form -> show_results (std::to_string (nr_candidates) + " candidates");
 //	Don't waste time on signals outside of the range [fmin,fmax].
 	   int i = 0;
 	   for (int j = 0; j < nr_candidates; j++) {
@@ -621,7 +623,7 @@ char  loctab [32768 * 5] = {0};
 //	to nominal start time, which is 2 seconds into the file
 //	Calculates shift relative to the beginning of the file
 //	Negative shifts mean that signal started before start of file
-//	The program prints DT = shift-2 s
+//	The program prints DT = shift - 2 s
 //	Shifts that cause sync vector to fall off of either end of the data
 //	vector are accommodated by "partial decoding", such that missing
 //	symbols produce a soft-decision symbol value of 128
@@ -631,7 +633,7 @@ char  loctab [32768 * 5] = {0};
 
 	   for (int j = 0; j < nr_candidates; j++) {  // For each candidate...
 	      float sync, sync_max = -1e30;
-	      int if0 = candidates[j].freq / (DF / 2.0) + NSPERSYM;
+	      int if0 = candidates [j].freq / (DF / 2.0) + NSPERSYM;
 	      for (int ifr = if0 - 1; ifr <= if0 + 1; ifr++) {  // Freq search
 	         for (int k0 = -10; k0 < 22; k0++) {           // Time search
 	            for (int idrift = -maxdrift;
@@ -723,7 +725,7 @@ char  loctab [32768 * 5] = {0};
 	      candidates [j]. drift = drift;
 	      candidates [j]. sync  = sync;
 
-	      worth_a_try = (sync > minsync1) ?  1 : 0;
+	      worth_a_try = (sync > minsync1);
 	      int idt = 0, ii = 0;
 	      bool decoded = false;
 	      while (worth_a_try && !decoded && idt <= (128 / iifac)) {
@@ -824,7 +826,7 @@ char  loctab [32768 * 5] = {0};
 	   }
 	}
 
-//	(Bubble) Sort the result  on the snr values
+//	(Bubble) Sort the result on the snr values
 	struct decoder_results temp;
 	for (int j = 1; j <= uniques - 1; j++) {
 	   for (int k = 0; k < uniques - j; k++) {
@@ -836,6 +838,7 @@ char  loctab [32768 * 5] = {0};
 	   }
 	}
 
+	m_form -> show_results (std::to_string (uniques) + " uniques");
 //	Return number of spots to the calling fct */
 	*n_results = uniques;
 

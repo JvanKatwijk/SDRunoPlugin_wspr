@@ -165,7 +165,7 @@ int	getFreq	(const std::string &s) {
 	if (filePointer != nullptr)
 	   fclose (filePointer);
 	if (theWriter != nullptr)
-		delete theWriter;
+	   delete theWriter;
 }
 
 void	SDRunoPlugin_wspr::HandleEvent (const UnoEvent& ev) {
@@ -191,22 +191,53 @@ void    SDRunoPlugin_wspr::StreamProcessorProcess (channel_t channel,
 }
 //
 //	we get the samples "in" with a specified rate of 192000,
-//	we decimate in 2 steps to 375 Ss and store SIGNAL_LENGTH seconds of
+//	we decimate in 3 steps to 375 Ss and store SIGNAL_LENGTH seconds of
 //	data in the buffer
 void    SDRunoPlugin_wspr::AudioProcessorProcess (channel_t channel,
 	                                          float* buffer,
 	                                          int length,
 	                                          bool& modified) {
-static	int teller = 0;
 //	Handling IQ input, note that SDRuno interchanges I and Q elements
-
+static	int teller = 0;
+static	int delayCount = 0;
+static	int bufferCounter = 0;
+//
+//	buffers have a length of 512 samples, with a rate of 192000 that means
+//	375 times a second, i.e. each 2.66 msec, a buffer arrives
+//	If "waiting" we check with a preiod slightly longer than 10 msec
 	if (!modified) {
+	   if (!rx_state. savingSamples) {
+	      bufferCounter ++;
+	      if (bufferCounter >= 5) {
+	         bufferCounter = 0;
+	         struct timeval lTime;
+	         gettimeofday (&lTime, nullptr);
+	         uint32_t sec   = lTime. tv_sec % 120;
+	         int32_t msec  = (sec * 1000000 + lTime. tv_usec) / 1000;
+	         if (sec != delayCount) {
+	            delayCount = sec;
+	            m_form. show_status ("waiting " + std::to_string(120 - sec));
+	         }
+	         if (msec > 1500) { // this is 1.5 second, should be enough
+	            honor_freqRequest();	// if any
+	         }
+	         if (msec <= 50) {
+	            delayCount = 0;
+	            bufferCounter = 0;
+	            rx_state. savingSamples = true;
+	         }
+	      }
+	   }
+//
+//	we process all samples, 
 	   for (int i = 0; i < length; i++) {
-		   std::complex<float> sample =
-			   std::complex<float>(buffer[2 * i + 1], buffer[2 * i]);
+	    std::complex<float> sample =
+			   std::complex<float> (buffer [2 * i + 1],
+	                                        buffer [2 * i]);
 	      if (decimator_0. Pass (sample, &sample) &&
 	          decimator_1. Pass (sample, &sample) &&
 	          decimator_2. Pass (sample, &sample)) {
+
 	         if (rx_state. savingSamples. load ()) {
 	            inputBuffer. putDataIntoBuffer (&sample, 1);
 	            teller ++;
@@ -214,8 +245,7 @@ static	int teller = 0;
 	               m_form.show_status ("reading  " +
 	                     std::to_string (teller / SIGNAL_SAMPLE_RATE));
 			
-	            if (inputBuffer. GetRingBufferReadAvailable () >=
-	                               SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE) {
+	            if (teller >= SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE) {
 	               teller = 0;
 	               rx_state. savingSamples.store (false);
 	            }
@@ -225,116 +255,62 @@ static	int teller = 0;
 	}
 }
 //
-//	Data collection takes place in a function, called from
-//	within amother thread. We create a worker thread that
-//	will monitor the time, and  - if the time is right -
-//	signal the data reader to collect samples for 116 seconds
-//	The worker will collect the samples, most likely within
-//	4 seconds, and then signal the reader that a new collecting phase
-//	mau start. While the reader is collecting the data, the
-//	worker will process the data
 
-void	SDRunoPlugin_wspr::wait_to_start () {
-struct timeval lTime;
-//	on start up,  Wait for timing alignment, here we
-//	compute the delay
-	gettimeofday (&lTime, nullptr);
-	uint32_t sec   = lTime. tv_sec % 120;
-	uint32_t usec  = sec * 1000000 + lTime. tv_usec;
-//
-//      waiting is for an even time in minutes, i.e. 120 seconds
-	uint32_t uwait	=  120000000 - usec - 10000;
-	while (rx_state. running. load () && (uwait / 1000000 > 1)) {
-	   if (rx_state. frequencyChange. load ()) {
-	      rx_options. dialFreq      = newFrequency;
-	      dec_options. freq         = newFrequency;
-	      m_controller		-> SetVfoFrequency (0,
-	                                              (float)newFrequency);
-	      m_controller		-> SetCenterFrequency (0,
-	                                        (float)newFrequency + 1500);
-	      rx_state. frequencyChange. store (false);
-//	we cannot assume that the above statements do not take
-//	time, recompute the delay
-	      gettimeofday (&lTime, nullptr);
-	      uint32_t sec = lTime.tv_sec % 120;
-	      uint32_t usec = sec * 1000000 + lTime.tv_usec;
-	      uwait = 120000000 - usec - 10000;
-	   }
-	   m_form. show_status ("waiting  " + std::to_string (uwait / 1000000));
-	   Sleep (1000); // sleep in milliseconds, so, wait 1 second
-	   uwait -= 1000000;
+void	SDRunoPlugin_wspr::honor_freqRequest () {
+	if (rx_state.frequencyChange.load()) {
+	   rx_options.dialFreq = newFrequency;
+	   dec_options.freq = newFrequency;
+	   m_controller->SetVfoFrequency(0, (float)newFrequency);
+	   m_controller->SetCenterFrequency(0, (float)newFrequency + 1500);
+	   rx_state.frequencyChange.store(false);
 	}
-	if (rx_state. running. load () && (uwait > 0))
-	   Sleep (uwait / 1000); 	// Sleep in milliseconds
 }
 
 static
 std::complex<float> buffer [SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE];
-void	SDRunoPlugin_wspr::workerFunction() {
-	int	cycleCounter = 1;
+void	SDRunoPlugin_wspr::workerFunction () {
+int	cycleCounter = 1;
+std::thread *nextWorker =  nullptr;
+
 	rx_state.running.store(true);
 	m_form. show_results ("running");
-	//
-	//	at first we wait until we have an "even" second
-	wait_to_start();
-	if (!rx_state.running.load())
-		return;
-	//	then we signal that we want samples to be read in
-	rx_state.savingSamples.store(true);
-	//
-	//	and of course, we have to wait now
-	while (rx_state.running.load()) {
-	   m_form.show_status("reader is working");
-	   while (rx_state.running.load() &&
-	          (inputBuffer.GetRingBufferReadAvailable() <
+
+//	wait until the buffer is filled
+	while (rx_state.running. load ()) {
+	   m_form.show_status ("reader is working");
+	   while (rx_state. running. load () &&
+	          (inputBuffer.GetRingBufferReadAvailable () <
 				SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE)) {
-	      Sleep(100);	// here: milli seconds
+	      Sleep (1000);	// here: just wait for 1 second
 	   }
+
 	   if (!rx_state.running.load())
 	      break;
 
-//	The "reader" probably has already set the flag to false
-//	but we'll do it anyway
-	   rx_state.savingSamples.store(false);
-//
 //	   read the buffer, length is known
 	   int N = inputBuffer.
 	                getDataFromBuffer (buffer,
 	                                   SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE);
-	   if (N < SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE) 
-	      return;		// should not happen
-//
-	   inputBuffer.FlushRingBuffer();
-//	This seems the right moment to honor switchof frequency
-	   wait_to_start();
-	   if (!rx_state.running.load())
+
+	   m_form. show_results ("cycle " + std::to_string (cycleCounter));
+	   if (!rx_state. running. load ())
 	      break;
-	   rx_state. savingSamples. store (true);
 //
 //	and, while the reader callback is reading in the samples for the
-//	next 114 to 117 seconds and putting them into the buffer,
+//	next 116 seconds and putting them into the buffer,
 //	there is ample time to process the data of the previous cycle
-	   m_form.show_results ("buffer " + std::to_string(cycleCounter));
-	   processBuffer(buffer);
+	   processBuffer (buffer);
 	   cycleCounter++;
 	}
+	m_form.show_results ("task is quitting");
 }
 
 //	filling the buffer takes about 116 seconds, during that
 //	period we process the previously filled buffer
 void	SDRunoPlugin_wspr::processBuffer (std::complex<float> *b) {
-//	Normalize the sample @-3dB 
-	float maxSig = 1e-24f;
-	for (int i = 0; i < SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE; i ++) {
-	   if (abs (b [i]) > maxSig)
-	      maxSig = abs (b [i]);
-	}
-
-	maxSig = 0.5 / maxSig;
-	maxSig = 1;
 	for (int i = 0; i < SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE; i++) {
-	   samples_i [i] = maxSig * real (b [i]);
-	   samples_q [i] = maxSig * imag (b [i]);
+	   samples_i [i] = real (b [i]);
+	   samples_q [i] = imag (b [i]);
 	}
 
 	time_t unixtime; 
@@ -344,21 +320,28 @@ void	SDRunoPlugin_wspr::processBuffer (std::complex<float> *b) {
 
 	int n_results = 0;
 //	Search & decode the signal 
-	wspr_decode (&fft,
-	             samples_i,
-	             samples_q,
-	             SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE,
-	             dec_options,
-	             dec_results,
-	             &n_results);
+	try {
+	   wspr_decode (&fft,
+	                &m_form,
+	                samples_i,
+	                samples_q,
+	                SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE,
+	                dec_options,
+	                dec_results,
+	                &n_results);
+	} catch (...) {
+	   m_form. show_results ("buffer overflow");
+	   n_results = 0;
+	}
+	m_form.show_results(std::to_string(n_results) + " gevonden");
 	time_t localtime;
-	time(&localtime);
-        localtime = localtime - 120 + 1;
+	time (&localtime);
+	localtime = localtime - 120 + 1;
 	std::vector<struct decoder_results> resultStack;
 	for (int i = 0; i < n_results; i ++)
 	   if (!recentlySeen (dec_results [i], localtime)) 
 	      resultStack. push_back (dec_results [i]);
-	   printSpots (resultStack);
+	printSpots (resultStack);
 	if (rx_options. report && (resultStack. size () > 0)) 
 	   postSpots (resultStack);
 }
@@ -480,7 +463,7 @@ void	SDRunoPlugin_wspr::switch_reportMode () {
 	if (theWriter != nullptr) {
 	   delete theWriter;     
 	   theWriter = nullptr;
-        }  
+	}  
 	else {
 	   try {
 	      theWriter = new reporterWriter (&m_form);
@@ -544,10 +527,13 @@ static
 bool	equals (char *a, char *b) {
 	return std::string(a) == std::string(b);
 }
-
+//
+// it took a while before I realized that calling the "front" from
+// a queue needed a check that the queue was not empty
 bool	SDRunoPlugin_wspr::recentlySeen (struct decoder_results &lastRes, 
 	                                 time_t time) {
-	while (resultQueue. front (). time + 2 * 300 < time)
+	while (!resultQueue .empty () &&
+	        resultQueue. front (). time + 2 * 300 < time)
 	   resultQueue. pop_front ();
 
 	for (auto &res : resultQueue) 

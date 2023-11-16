@@ -81,40 +81,42 @@ private:
 	void SettingsButton_Click();
 
 	// TODO: Now add your UI controls here
-
+//
+//	Topline with controls
 	nana::combox bandSelector {*this,
-                                    nana::rectangle ( 30, 30, 80, 20)};
+                                    nana::rectangle ( 30, 30, 70, 20)};
 	nana::button callsign_Button {*this,
-                                    nana::rectangle ( 120, 30, 40, 20)};
-	nana::label statusLine	  {*this,
-                                    nana::rectangle ( 170, 30, 120, 20)};
-	nana::label resultLine	  {*this,
-                                    nana::rectangle ( 300, 30, 80, 20)};
-	nana::label printStatus	  {*this,
-	                            nana::rectangle ( 390, 30, 90, 20)};
-	nana::button dumpButton   {*this,
-	                            nana::rectangle ( 490, 30, 50, 20)};
+                                    nana::rectangle ( 110, 30, 50, 20)};
 	nana::button subtractionButton {*this,
-                                    nana::rectangle ( 30, 60, 60, 20)};
+                                    nana::rectangle ( 170, 30, 40, 20)};
 	nana::button quickModeButton {*this,
-                                    nana::rectangle ( 100, 60, 60, 20)};
+                                    nana::rectangle ( 220, 30, 40, 20)};
 	nana::button reportModeButton {*this,
-                                    nana::rectangle ( 170, 60, 80, 20)};
-	nana::button resetButton   {*this,
-	                            nana::rectangle ( 260, 60, 60, 20)};
-	
-	nana::label homeCall	   {*this,
-	                            nana::rectangle ( 330, 60, 60, 20)};
-	nana::label homeLoc	   {*this,
-	                            nana::rectangle (400, 60, 60,  20)};
-	nana::label copyRightLabel {*this,
-		                        nana::rectangle (470, 60, 20, 20)};
+                                    nana::rectangle ( 270, 30, 80, 20)};
+	nana::button resetButton  {*this,
+	                            nana::rectangle ( 360, 30, 40, 20)};
+	nana::button dumpButton   {*this,
+	                            nana::rectangle ( 410, 30, 50, 20)};
 	nana::label  versionLabel {*this,
-	                                nana::rectangle (490, 60, 40, 20)};
+	                            nana::rectangle ( 470, 30, 40, 20)};
+	nana::label copyRightLabel {*this,
+		                    nana::rectangle ( 510, 30, 30, 20)};
+
+
+	nana::label homeCall	  {*this,
+	                            nana::rectangle (  40, 60, 80, 20)};
+	nana::label homeLoc	   {*this,
+	                            nana::rectangle ( 130, 60, 80,  20)};
+	nana::label statusLine	  {*this,
+                                    nana::rectangle ( 220, 60, 100, 20)};
+	nana::label resultLine	  {*this,
+                                    nana::rectangle ( 330, 60, 100, 20)};
+	nana::label printStatus	  {*this,
+	                            nana::rectangle ( 440, 60, 100, 20)};
 
 	std::list<std::string> displayList;
 	nana::label textBlock	  {*this,
                                     nana::rectangle ( 30, 90, 520, 400)};
-	SDRunoPlugin_wsprUi & m_parent;
-	IUnoPluginController & m_controller;
+	SDRunoPlugin_wsprUi &m_parent;
+	IUnoPluginController &m_controller;
 };

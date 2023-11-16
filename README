@@ -23,7 +23,7 @@ is to 375 samples/second (We start here with 192000, the SDRplay will send
 c, handling the result.
 
 The FFT handling is modified, rather than the FFTW3 library, a choice
-was made to use the KISS library, primarily since the sources could be
+was made to use the KISS library, the reason being that the sources could be
 included, preventing potential users to oblige installing yet another 
 library.
 The copyrights of the KISS library belong to  Mark Borgerding and
@@ -33,8 +33,5 @@ The basic idea is that since reading in the samples takes about 116 seconds,
 there is ample time to do the processing in parallel.
 In the Linux version decoding is dome by firing a single thread in which
 the function is executed.
-
-
-libcurl-4.dll libcrypto libgcc_s_dw2 libidn2-0 libwinpthread-1 libssh3-1 libssl-3 zlib1 libssp
 
 

@@ -33,6 +33,8 @@
 
 #pragma once
 
+#include	"..\SDRunoPlugin_wsprUi.h"
+
 class	fftHandler;
 #ifdef __cplusplus
 extern "C" {
@@ -102,6 +104,7 @@ void subtract_signal2(float *id,
                       float drift,
                       unsigned char *channel_symbols);
 int wspr_decode	(fftHandler	*,
+	         SDRunoPlugin_wsprUi *m_form,
 	         float  *idat, 
                  float  *qdat, 
                  int    samples,

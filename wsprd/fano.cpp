@@ -105,17 +105,24 @@ bool fano (unsigned int *metric,      // Final path metric (returned value)
     unsigned int i;
 
     if ((nodes = (struct node *)malloc((nbits + 1) * sizeof(struct node))) == NULL) {
-        printf("malloc failed\n");
+        printf ("malloc failed\n");
         return false;
     }
     lastnode = &nodes[nbits - 1];
     tail = &nodes[nbits - 31];
     *maxnp = 0;
 
-    /* Compute all possible branch metrics for each symbol pair
-     * This is the only place we actually look at the raw input symbols
-     */
+/*	Compute all possible branch metrics for each symbol pair
+ *	This is the only place we actually look at the raw input symbols
+ */
     for (np = nodes; np <= lastnode; np++) {
+	int t1 = symbols [0];
+	int t2 = symbols [1];
+	if (t1 >= 256 || t2 >= 256)
+	   throw (21);
+//
+//	it seems that occasionally the indices for mettab [0]
+//	and mettab [1] are too large
         np->metrics[0] = mettab[0][symbols[0]] + mettab[0][symbols[1]];
         np->metrics[1] = mettab[0][symbols[0]] + mettab[1][symbols[1]];
         np->metrics[2] = mettab[1][symbols[0]] + mettab[0][symbols[1]];
