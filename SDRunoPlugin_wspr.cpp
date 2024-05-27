@@ -106,6 +106,7 @@ int	getFreq	(const std::string &s) {
 //	default frequency is in the 20m band
 	rx_state.	frequencyChange. store (false);
 	rx_state.	running. store (false);
+	rx_state.	resetRequest. store (false);
 	rx_state.	savingSamples. store (false);
 	m_form. initBand ();
 	std::string theBand		= m_form. get_LastBand ();
@@ -209,11 +210,17 @@ static	int bufferCounter = 0;
 	   if (!rx_state. running. load ())
 	      return;
 	   if (rx_state. resetRequest. load ()) {
-	      rx_state. savingSamples = false;
+	      locker. lock ();
+	      if (optionsQueue. size () > 0)
+	         optionsQueue. pop ();
+	      locker. unlock ();
+	      rx_state. savingSamples. store (false);
 	      inputBuffer. FlushRingBuffer ();
 	      bufferCounter = 0;
-		  teller = 0;
-		  delayCount = 0;
+	      teller = 0;
+	      delayCount = 0;
+		  for (int i = 0; i < optionsQueue.size(); i++)
+			  optionsQueue.pop();
 	      rx_state. resetRequest. store (false);
 	   }
 	   if (!rx_state. savingSamples) {
@@ -270,10 +277,10 @@ static	int bufferCounter = 0;
 void	SDRunoPlugin_wspr::honor_freqRequest () {
 	if (rx_state.frequencyChange. load ()) {
 	   rx_options.dialFreq = newFrequency;
-	   dec_options.freq = newFrequency;
-	   m_controller->SetVfoFrequency(0, (float)newFrequency);
-	   m_controller->SetCenterFrequency(0, (float)newFrequency + 1500);
-	   rx_state.frequencyChange.store(false);
+	   dec_options. freq = newFrequency;
+	   m_controller -> SetVfoFrequency(0, (float)newFrequency);
+	   m_controller -> SetCenterFrequency(0, (float)newFrequency + 1500);
+	   rx_state. frequencyChange.store(false);
 	}
 }
 
@@ -312,10 +319,16 @@ std::thread *nextWorker =  nullptr;
 //	and, while the reader callback is reading in the samples for the
 //	next 116 seconds and putting them into the buffer,
 //	there is ample time to process the data of the previous cycle
-	   struct decoder_options dec_options	= optionsQueue. front ();
-	   optionsQueue. pop ();
-	   processBuffer (buffer, dec_options);
-	   cycleCounter++;
+	   locker. lock ();
+	   if (optionsQueue. size () > 0) {
+	      struct decoder_options dec_options = optionsQueue. front ();
+	      optionsQueue. pop ();
+	      locker. unlock ();
+	      processBuffer (buffer, dec_options);
+	      cycleCounter++;
+	      continue;
+	   }
+	   locker. unlock ();
 	}
 	m_form.show_results ("task is quitting");
 }

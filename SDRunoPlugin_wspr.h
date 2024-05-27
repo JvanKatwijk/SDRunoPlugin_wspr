@@ -60,7 +60,7 @@ private:
 	                                             struct decoder_options &);
 	void		postSpots	(std::vector<decoder_results> &);
 
-//	std::queue<int>	frequencyQueue;
+	std::mutex	locker;
 	std::vector<std::complex<float>> tones;
 	int		tonePhase;
 	int		toneFreq;
