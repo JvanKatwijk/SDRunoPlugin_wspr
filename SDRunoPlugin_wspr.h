@@ -11,6 +11,7 @@
 #include <iunostreamobserver.h>
 #include <iunoannotator.h>
 #include "SDRunoPlugin_wsprUi.h"
+#include	<queue>
 #include	"constants.h"
 #include        "ringbuffer.h"
 #include        "decimator.h"
@@ -55,13 +56,14 @@ virtual ~SDRunoPlugin_wspr ();
 
 	bool		set_wsprDump	();
 private:
-	void		printSpots	(std::vector<decoder_results> &);
+	void		printSpots	(std::vector<decoder_results> &,
+	                                             struct decoder_options &);
 	void		postSpots	(std::vector<decoder_results> &);
 
+//	std::queue<int>	frequencyQueue;
 	std::vector<std::complex<float>> tones;
 	int		tonePhase;
 	int		toneFreq;
-
 	void		honor_freqRequest	();
 	IUnoPluginController *m_controller;
 	void		workerFunction	();
@@ -74,6 +76,7 @@ private:
 	RingBuffer<std::complex<float>> inputBuffer;
 	struct	decoder_options	dec_options;
 	struct	decoder_results	dec_results [50];
+	std::queue<struct decoder_options> optionsQueue;
 
 	reporterWriter	*theWriter;
 	FILE		*filePointer;
@@ -87,8 +90,9 @@ private:
 
 	struct plugin_state {
 	   std::atomic<bool>	frequencyChange;
-	   std::atomic<bool> running;
-	   std::atomic<bool> savingSamples;
+	   std::atomic<bool>	running;
+	   std::atomic<bool>	savingSamples;
+	   std::atomic<bool>	resetRequest;
 	   struct tm	*gtm;
 	} rx_state;
 
@@ -108,6 +112,7 @@ private:
                                          time_t time);
 
 	std::mutex	printing;
-	void		processBuffer	(std::complex<float> *);
+	void		processBuffer	(std::complex<float> *, 
+	                                 struct decoder_options &);
 };
 

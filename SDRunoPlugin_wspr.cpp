@@ -204,8 +204,18 @@ static	int bufferCounter = 0;
 //
 //	buffers have a length of 512 samples, with a rate of 192000 that means
 //	375 times a second, i.e. each 2.66 msec, a buffer arrives
-//	If "waiting" we check with a preiod slightly longer than 10 msec
+//	If "waiting" we check with a period slightly longer than 10 msec
 	if (!modified) {
+	   if (!rx_state. running. load ())
+	      return;
+	   if (rx_state. resetRequest. load ()) {
+	      rx_state. savingSamples = false;
+	      inputBuffer. FlushRingBuffer ();
+	      bufferCounter = 0;
+		  teller = 0;
+		  delayCount = 0;
+	      rx_state. resetRequest. store (false);
+	   }
 	   if (!rx_state. savingSamples) {
 	      bufferCounter ++;
 	      if (bufferCounter >= 5) {
@@ -225,6 +235,7 @@ static	int bufferCounter = 0;
 	            delayCount = 0;
 	            bufferCounter = 0;
 	            rx_state. savingSamples = true;
+	            optionsQueue. push (dec_options);
 	         }
 	      }
 	   }
@@ -257,7 +268,7 @@ static	int bufferCounter = 0;
 //
 
 void	SDRunoPlugin_wspr::honor_freqRequest () {
-	if (rx_state.frequencyChange.load()) {
+	if (rx_state.frequencyChange. load ()) {
 	   rx_options.dialFreq = newFrequency;
 	   dec_options.freq = newFrequency;
 	   m_controller->SetVfoFrequency(0, (float)newFrequency);
@@ -272,20 +283,22 @@ void	SDRunoPlugin_wspr::workerFunction () {
 int	cycleCounter = 1;
 std::thread *nextWorker =  nullptr;
 
-	rx_state.running.store(true);
+	rx_state. running. store (true);
+	rx_state. resetRequest. store (false);
 	m_form. show_results ("running");
 
 //	wait until the buffer is filled
-	while (rx_state.running. load ()) {
+	while (rx_state. running. load ()) {
 	   m_form.show_status ("reader is working");
+	   int frequency = dec_options.freq;
 	   while (rx_state. running. load () &&
 	          (inputBuffer.GetRingBufferReadAvailable () <
 				SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE)) {
 	      Sleep (1000);	// here: just wait for 1 second
 	   }
 
-	   if (!rx_state.running.load())
-	      break;
+	   if (!rx_state.running.load () || rx_state. resetRequest. load ())
+	      continue;
 
 //	   read the buffer, length is known
 	   int N = inputBuffer.
@@ -299,7 +312,9 @@ std::thread *nextWorker =  nullptr;
 //	and, while the reader callback is reading in the samples for the
 //	next 116 seconds and putting them into the buffer,
 //	there is ample time to process the data of the previous cycle
-	   processBuffer (buffer);
+	   struct decoder_options dec_options	= optionsQueue. front ();
+	   optionsQueue. pop ();
+	   processBuffer (buffer, dec_options);
 	   cycleCounter++;
 	}
 	m_form.show_results ("task is quitting");
@@ -307,7 +322,8 @@ std::thread *nextWorker =  nullptr;
 
 //	filling the buffer takes about 116 seconds, during that
 //	period we process the previously filled buffer
-void	SDRunoPlugin_wspr::processBuffer (std::complex<float> *b) {
+void	SDRunoPlugin_wspr::processBuffer (std::complex<float> *b,
+	                                  struct decoder_options &dec_options) {
 	for (int i = 0; i < SIGNAL_LENGTH * SIGNAL_SAMPLE_RATE; i++) {
 	   samples_i [i] = real (b [i]);
 	   samples_q [i] = imag (b [i]);
@@ -333,7 +349,7 @@ void	SDRunoPlugin_wspr::processBuffer (std::complex<float> *b) {
 	   m_form. show_results ("buffer overflow");
 	   n_results = 0;
 	}
-	m_form.show_results(std::to_string(n_results) + " gevonden");
+	m_form.show_results(std::to_string(n_results) + " detected");
 	time_t localtime;
 	time (&localtime);
 	localtime = localtime - 120 + 1;
@@ -341,23 +357,32 @@ void	SDRunoPlugin_wspr::processBuffer (std::complex<float> *b) {
 	for (int i = 0; i < n_results; i ++)
 	   if (!recentlySeen (dec_results [i], localtime)) 
 	      resultStack. push_back (dec_results [i]);
-	printSpots (resultStack);
+	printSpots (resultStack, dec_options);
 	if (rx_options. report && (resultStack. size () > 0)) 
 	   postSpots (resultStack);
 }
 
-void	SDRunoPlugin_wspr::printSpots (std::vector<decoder_results> &results) {
+void	SDRunoPlugin_wspr::printSpots (std::vector<decoder_results> &results,
+	                               struct decoder_options &dec_options) {
 time_t localtime;
 struct tm	*gtm;
 
 	time (&localtime);
 	localtime = localtime - 120 + 1;
 	gtm = gmtime (&localtime);
-	std::string theTime	= std::to_string (gtm -> tm_hour) + "-" +
-	                                     std::to_string (gtm -> tm_min);
+	std::string hours	= gtm -> tm_hour < 10 ? 
+	                             std::to_string (0) + 
+	                             std::to_string (gtm -> tm_hour):
+	                             std::to_string (gtm -> tm_hour);
+	std::string minutes	= gtm -> tm_min < 10 ?
+	                             std::to_string (0) + 
+	                             std::to_string (gtm -> tm_min):
+	                             std::to_string (gtm -> tm_min);
+	std::string theTime	= hours + "-" + minutes;
 
 	if (results. size () == 0) {
-	   std::string message = "Nothing at " + theTime;
+	   std::string message = "No results at " +
+	               std::to_string (dec_options. freq / 1000) + "KHz (" + theTime + ")";
 	   m_form. addMessage (message);
 	   return;
 	}
@@ -479,14 +504,7 @@ void	SDRunoPlugin_wspr::switch_reportMode () {
 void	SDRunoPlugin_wspr::handle_reset	() {
 	if (!rx_state. running. load ())
 	   return;
-	rx_state. savingSamples. store (false);
-	rx_state. running. store (false);
-	Sleep (200);
-	m_worker -> join ();
-	delete m_worker;
-	m_worker	= nullptr;
-	m_worker =
-		new std::thread (&SDRunoPlugin_wspr::workerFunction, this);
+	rx_state. resetRequest. store (true);
 }
 
 bool	SDRunoPlugin_wspr::set_wsprDump	() {
